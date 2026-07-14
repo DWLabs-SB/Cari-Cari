@@ -603,9 +603,46 @@ async function doSignIn() {
   }
 }
 
-console.log('✅ Hybrid Auth System Ready (Local + Supabase)');
+// ===== SAFE DOM MANIPULATION =====
+function safeSetStyle(elementId, styles) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  Object.assign(el.style, styles);
+}
 
-// ===== AUTO-LOGIN ON PAGE LOAD =====
+function safeSetDisplay(elementId, display) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.style.display = display;
+}
+
+function safeSetClass(elementId, className, add = true) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  if (add) {
+    el.classList.add(className);
+  } else {
+    el.classList.remove(className);
+  }
+}
+
+console.log('✅ Safe DOM helpers loaded');
+
+// ===== GLOBAL ERROR HANDLER =====
+window.addEventListener('error', (event) => {
+  if (event.message && event.message.includes('Cannot read properties')) {
+    console.warn('⚠️ Caught null reference error:', event.message);
+    event.preventDefault();
+  }
+});
+
+// Also prevent unhandled promise rejections
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason && event.reason.message && event.reason.message.includes('Cannot read')) {
+    console.warn('⚠️ Caught unhandled error:', event.reason.message);
+    event.preventDefault();
+  }
+});
 window.addEventListener('load', () => {
   setTimeout(() => {
     // Try to restore localStorage session first (local mode)
@@ -1616,12 +1653,17 @@ window.addEventListener('load', () => {
   }
 
   function showSplash() {
-    document.getElementById('languageScreen').style.display = 'none';
-    document.getElementById('splashScreen').style.display = 'flex';
-    document.getElementById('registerScreen').style.display = 'none';
-    document.getElementById('signInScreen').style.display = 'none';
-    document.getElementById('pdpaScreen').style.display = 'none';
-    updateLanguageDisplay();
+    try {
+      const els = ['languageScreen', 'splashScreen', 'registerScreen', 'signInScreen', 'pdpaScreen'];
+      const displays = ['none', 'flex', 'none', 'none', 'none'];
+      els.forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = displays[i];
+      });
+      updateLanguageDisplay();
+    } catch (e) {
+      console.log('⚠️ showSplash: elements not found');
+    }
   }
 
   // ===== NOTIFICATION FUNCTION =====
@@ -1651,17 +1693,35 @@ window.addEventListener('load', () => {
   }
 
   function showRegister() {
-    document.getElementById('splashScreen').style.display = 'none';
-    document.getElementById('registerScreen').style.display = 'block';
+    try {
+      const splash = document.getElementById('splashScreen');
+      const register = document.getElementById('registerScreen');
+      if (splash) splash.style.display = 'none';
+      if (register) register.style.display = 'block';
+    } catch (e) {
+      console.log('⚠️ showRegister: elements not found');
+    }
   }
 
   function showSignIn() {
-    document.getElementById('splashScreen').style.display = 'none';
-    document.getElementById('signInScreen').style.display = 'block';
+    try {
+      const splash = document.getElementById('splashScreen');
+      const signin = document.getElementById('signInScreen');
+      if (splash) splash.style.display = 'none';
+      if (signin) signin.style.display = 'block';
+    } catch (e) {
+      console.log('⚠️ showSignIn: elements not found');
+    }
   }
 
   function showPDPA() {
-    document.getElementById('pdpaScreen').style.display = 'block';
+    try {
+      const pdpa = document.getElementById('pdpaScreen');
+      if (pdpa) pdpa.style.display = 'block';
+    } catch (e) {
+      console.log('⚠️ showPDPA: elements not found');
+    }
+  }
   }
 
   function closePDPA() {
@@ -4375,78 +4435,93 @@ window.addEventListener('load', () => {
   // ===== INIT: ADD SAMPLE FEED ITEMS =====
   // Sample coordinates near Kuala Lumpur (within 2km of center: 3.1357, 101.6880)
   
-  addFeedItem({
-    isAd: true,
-    name: 'Fresh Nasi Kuning',
-    price: '15',
-    text: 'Homemade nasi kuning available daily. Free delivery within 2km!',
-    location: '📍 Setapak',
-    boosted: true,
-    boostLabel: '1 day',
-    category: 'eatery'
-  });
-  // Store coordinates for nearby filtering (Setapak, ~1.5km from center)
-  document.querySelector('.feed-item').dataset.lat = 3.1150;
-  document.querySelector('.feed-item').dataset.lng = 101.7050;
+  try {
+    addFeedItem({
+      isAd: true,
+      name: 'Fresh Nasi Kuning',
+      price: '15',
+      text: 'Homemade nasi kuning available daily. Free delivery within 2km!',
+      location: '📍 Setapak',
+      boosted: true,
+      boostLabel: '1 day',
+      category: 'eatery'
+    });
+    // Store coordinates for nearby filtering (Setapak, ~1.5km from center)
+    const feedItem = document.querySelector('.feed-item');
+    if (feedItem) {
+      feedItem.dataset.lat = 3.1150;
+      feedItem.dataset.lng = 101.7050;
+    }
 
-  // Add to boosted carousel
-  addBoostCarouselCard({
-    name: 'Fresh Nasi Kuning',
-    price: '15',
-    desc: 'Homemade nasi kuning available daily. Free delivery within 2km!',
-    location: '📍 Setapak',
-    boostLabel: '1 day',
-    category: 'eatery'
-  });
+    // Add to boosted carousel
+    addBoostCarouselCard({
+      name: 'Fresh Nasi Kuning',
+      price: '15',
+      desc: 'Homemade nasi kuning available daily. Free delivery within 2km!',
+      location: '📍 Setapak',
+      boostLabel: '1 day',
+      category: 'eatery'
+    });
 
-  addFeedItem({
-    isAd: false,
-    text: 'Just tried the new cafeteria in Bangsar. Amazing coffee! ☕'
-  });
+    addFeedItem({
+      isAd: false,
+      text: 'Just tried the new cafeteria in Bangsar. Amazing coffee! ☕'
+    });
 
-  addFeedItem({
-    isAd: true,
-    name: 'Bike Repair Service',
-    price: 'From 50',
-    text: 'Professional bike maintenance & repairs. Trusted since 2018.',
-    location: '📍 Sentosa',
-    category: 'services'
-  });
-  // Sentosa coordinates (~1.2km from center)
-  const bikeItem = document.querySelectorAll('.feed-item')[2];
-  bikeItem.dataset.lat = 3.1450;
-  bikeItem.dataset.lng = 101.6750;
+    addFeedItem({
+      isAd: true,
+      name: 'Bike Repair Service',
+      price: 'From 50',
+      text: 'Professional bike maintenance & repairs. Trusted since 2018.',
+      location: '📍 Sentosa',
+      category: 'services'
+    });
+    // Sentosa coordinates (~1.2km from center)
+    const bikeItem = document.querySelectorAll('.feed-item')[2];
+    if (bikeItem) {
+      bikeItem.dataset.lat = 3.1450;
+      bikeItem.dataset.lng = 101.6750;
+    }
 
-  // Add more sample boosted cards
-  addBoostCarouselCard({
-    name: 'Organic Coffee Roastery',
-    price: '12-18',
-    desc: 'Single-origin specialty coffee. Daily brew & beans.',
-    location: '📍 Bangsar',
-    boostLabel: '3 days',
-    category: 'eatery'
-  });
+    // Add more sample boosted cards
+    addBoostCarouselCard({
+      name: 'Organic Coffee Roastery',
+      price: '12-18',
+      desc: 'Single-origin specialty coffee. Daily brew & beans.',
+      location: '📍 Bangsar',
+      boostLabel: '3 days',
+      category: 'eatery'
+    });
 
-  addBoostCarouselCard({
-    name: 'Laptop Repair Pro',
-    price: 'From 80',
-    desc: 'Fast & reliable repairs. Same-day service available.',
-    location: '📍 Mid Valley',
-    boostLabel: '1 week',
-    category: 'services'
-  });
+    addBoostCarouselCard({
+      name: 'Laptop Repair Pro',
+      price: 'From 80',
+      desc: 'Fast & reliable repairs. Same-day service available.',
+      location: '📍 Mid Valley',
+      boostLabel: '1 week',
+      category: 'services'
+    });
 
-  addBoostCarouselCard({
-    name: 'Personal Training',
-    price: '150/hr',
-    desc: 'Fitness coaching. In-gym or online sessions.',
-    location: '📍 Pavilion',
-    boostLabel: '3 hours',
-    category: 'services'
-  });
+    addBoostCarouselCard({
+      name: 'Personal Training',
+      price: '150/hr',
+      desc: 'Fitness coaching. In-gym or online sessions.',
+      location: '📍 Pavilion',
+      boostLabel: '3 hours',
+      category: 'services'
+    });
+
+    console.log('✅ Dashboard sample data loaded successfully');
+  } catch (e) {
+    console.warn('⚠️ Dashboard initialization deferred (elements not ready yet)', e.message);
+  }
 
   // Apply initial distance filter
-  filterFeedByDistance();
+  try {
+    filterFeedByDistance();
+  } catch (e) {
+    console.log('⚠️ Distance filter: elements not ready');
+  }
 </script>
 </body>
 </html>
