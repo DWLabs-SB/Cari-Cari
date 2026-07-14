@@ -2320,6 +2320,13 @@
   // Check if user is logged in
   window.addEventListener('load', async () => {
     try {
+      // First, show the auth screens (splash)
+      document.getElementById('authContainer').style.display = 'block';
+      document.getElementById('app').style.display = 'none';
+      
+      // Try to show splash screen with language display
+      showSplash();
+      
       // Check if user is logged in with Supabase
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -2338,16 +2345,12 @@
           document.getElementById('app').style.display = 'block';
           await loadFeedFromSupabase();
         }
-      } else {
-        document.getElementById('authContainer').style.display = 'block';
-        document.getElementById('splashScreen').style.display = 'flex';
-        updateLanguageDisplay();
-        updateLanguageButtons();
       }
     } catch (error) {
       console.error('Session check error:', error);
       document.getElementById('authContainer').style.display = 'block';
-      document.getElementById('splashScreen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      showSplash();
     }
   });
 
