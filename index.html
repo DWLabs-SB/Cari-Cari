@@ -773,6 +773,9 @@ async function submitPost() {
     alert('✅ Post shared successfully!');
     closePostModal();
     
+    // Reload feed to show new post
+    loadAndDisplayPosts();
+    
     // If deployed, also sync to Supabase
     if (useSupabase && supabaseReady) {
       try {
@@ -947,10 +950,31 @@ async function submitAdvertisement() {
   }
   
   try {
-    // Convert photos to base64 for localStorage
-    const photo1Base64 = await fileToBase64(photo1);
-    const photo2Base64 = document.getElementById('photo2').files[0] ? await fileToBase64(document.getElementById('photo2').files[0]) : null;
-    const photo3Base64 = document.getElementById('photo3').files[0] ? await fileToBase64(document.getElementById('photo3').files[0]) : null;
+    alert('⏳ Uploading photos to R2... Please wait');
+    
+    // Upload photos to R2
+    console.log('📸 Uploading photos to R2...');
+    
+    const photo1Url = await uploadToR2(photo1);
+    const photo2Url = document.getElementById('photo2').files[0] 
+      ? await uploadToR2(document.getElementById('photo2').files[0]) 
+      : null;
+    const photo3Url = document.getElementById('photo3').files[0] 
+      ? await uploadToR2(document.getElementById('photo3').files[0]) 
+      : null;
+    
+    // Build photos array - only include URLs
+    const photos = [];
+    if (photo1Url) photos.push(photo1Url);
+    if (photo2Url) photos.push(photo2Url);
+    if (photo3Url) photos.push(photo3Url);
+    
+    // If R2 upload completely failed for main photo, show error
+    if (photos.length === 0) {
+      alert('❌ Photo upload failed. Please check your Supabase Storage bucket configuration.');
+      console.error('No photos uploaded - bucket may not exist or not be public');
+      return;
+    }
     
     const advertisement = {
       id: Date.now(),
@@ -959,7 +983,7 @@ async function submitAdvertisement() {
       shopName: shopName,
       itemsDescription: itemsDescription,
       price: price,
-      photos: [photo1Base64, photo2Base64, photo3Base64].filter(p => p),
+      photos: photos, // Only URLs, not BASE64!
       location: location,
       boost: boost !== 'none' ? boost : null,
       boostDays: boost === '1day' ? 1 : boost === '3days' ? 3 : boost === '1week' ? 7 : 0,
@@ -968,7 +992,7 @@ async function submitAdvertisement() {
       isBoosted: boost !== 'none'
     };
     
-    // Save to localStorage
+    // Save to localStorage (just metadata + URLs, no large files)
     let ads = JSON.parse(localStorage.getItem('cariCariAdvertisements') || '[]');
     ads.unshift(advertisement);
     localStorage.setItem('cariCariAdvertisements', JSON.stringify(ads));
@@ -977,18 +1001,79 @@ async function submitAdvertisement() {
     alert('✅ Advertisement posted successfully!');
     closeAdvertiseModal();
     
+    // Reload ads to show new advertisement
+    loadAndDisplayAds();
+    
     // If deployed, also sync to Supabase
     if (useSupabase && supabaseReady) {
       try {
         await supabaseClient.from('advertisements').insert([advertisement]);
         console.log('✅ Advertisement synced to Supabase');
       } catch (e) {
-        console.warn('⚠️ Supabase sync skipped');
+        console.warn('⚠️ Supabase sync skipped:', e.message);
       }
     }
   } catch (err) {
     alert('❌ Error creating advertisement: ' + err.message);
     console.error('Advertise error:', err);
+  }
+}
+
+// ===== R2 PHOTO UPLOAD =====
+async function uploadToR2(file) {
+  try {
+    if (!file) return null;
+    
+    // Check if Supabase is ready and has storage access
+    if (!useSupabase || !supabaseReady) {
+      console.log('⚠️ Supabase not ready, using BASE64');
+      return null;
+    }
+    
+    if (!supabaseClient || !supabaseClient.storage) {
+      console.warn('⚠️ Supabase Storage not available');
+      return null;
+    }
+    
+    const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${file.name}`;
+    const filePath = `advertisements/${fileName}`;
+    
+    console.log('📤 Uploading to R2 via Supabase:', filePath);
+    
+    try {
+      // Upload to Supabase Storage
+      const { data, error } = await supabaseClient.storage
+        .from('cari-cari-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) {
+        console.warn('⚠️ R2 upload failed:', error.message);
+        return null;
+      }
+      
+      // Get public URL
+      const { data: publicData } = supabaseClient.storage
+        .from('cari-cari-files')
+        .getPublicUrl(filePath);
+      
+      const publicUrl = publicData?.publicUrl || null;
+      if (publicUrl) {
+        console.log('✅ R2 upload successful:', publicUrl);
+        return publicUrl;
+      }
+      return null;
+      
+    } catch (uploadError) {
+      console.warn('⚠️ R2 upload error:', uploadError.message);
+      return null;
+    }
+    
+  } catch (err) {
+    console.warn('⚠️ R2 upload exception:', err.message);
+    return null;
   }
 }
 
@@ -999,6 +1084,167 @@ function fileToBase64(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+// ===== TAB SWITCHING =====
+function switchTab(tab) {
+  try {
+    const postFields = document.getElementById('post-fields');
+    const adFields = document.getElementById('ad-fields');
+    const postTab = document.querySelector('.post-tab');
+    const adTab = document.querySelector('.ad-tab');
+    
+    if (tab === 'post') {
+      if (postFields) postFields.style.display = 'block';
+      if (adFields) adFields.style.display = 'none';
+      if (postTab) postTab.classList.add('active');
+      if (adTab) adTab.classList.remove('active');
+    } else if (tab === 'ad') {
+      if (postFields) postFields.style.display = 'none';
+      if (adFields) adFields.style.display = 'block';
+      if (postTab) postTab.classList.remove('active');
+      if (adTab) adTab.classList.add('active');
+    }
+  } catch (e) {
+    console.warn('⚠️ Tab switch error:', e.message);
+  }
+}
+
+// ===== LOAD AND DISPLAY POSTS =====
+function loadAndDisplayPosts() {
+  try {
+    const feedContainer = document.getElementById('feed-container');
+    if (!feedContainer) {
+      console.warn('⚠️ Feed container not found');
+      return;
+    }
+    
+    // Load posts from localStorage
+    const posts = JSON.parse(localStorage.getItem('cariCariPosts') || '[]');
+    
+    if (posts.length === 0) {
+      feedContainer.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px; color: #999;">
+          <p style="font-size: 1.2em;">📝 No posts yet</p>
+          <p style="font-size: 0.9em;">Be the first to share!</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Display each post
+    let postsHTML = '<div style="display: flex; flex-direction: column; gap: 15px;">';
+    
+    posts.forEach(post => {
+      const timestamp = new Date(post.timestamp).toLocaleString();
+      const postHTML = `
+        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+              <strong style="color: #333;">${escapeHtml(post.userName)}</strong>
+              <small style="color: #999; display: block; font-size: 0.85em;">${escapeHtml(post.userId)}</small>
+            </div>
+            <small style="color: #999;">${timestamp}</small>
+          </div>
+          <p style="color: #333; line-height: 1.5; margin: 10px 0;">${escapeHtml(post.text)}</p>
+          <div style="display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+            <button style="background: none; border: none; color: #1877f2; cursor: pointer; font-size: 0.9em;">👍 Like (${post.likes || 0})</button>
+            <button style="background: none; border: none; color: #1877f2; cursor: pointer; font-size: 0.9em;">💬 Comment</button>
+          </div>
+        </div>
+      `;
+      postsHTML += postHTML;
+    });
+    
+    postsHTML += '</div>';
+    feedContainer.innerHTML = postsHTML;
+    console.log('✅ Posts loaded and displayed:', posts.length);
+  } catch (e) {
+    console.warn('⚠️ Error loading posts:', e.message);
+  }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ===== LOAD AND DISPLAY ADVERTISEMENTS =====
+function loadAndDisplayAds() {
+  try {
+    const adsContainer = document.getElementById('ads-container');
+    if (!adsContainer) {
+      console.warn('⚠️ Ads container not found');
+      return;
+    }
+    
+    // Load ads from localStorage
+    const ads = JSON.parse(localStorage.getItem('cariCariAdvertisements') || '[]');
+    
+    if (ads.length === 0) {
+      adsContainer.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px; color: #999;">
+          <p style="font-size: 1.2em;">🏪 No advertisements yet</p>
+          <p style="font-size: 0.9em;">Be the first to advertise your shop!</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Display each ad
+    let adsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">';
+    
+    ads.forEach(ad => {
+      const timestamp = new Date(ad.timestamp).toLocaleDateString();
+      const boostBadge = ad.isBoosted ? `<span style="background: #ff9800; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 8px;">🚀 Boosted</span>` : '';
+      
+      // Handle image display (R2 URL or BASE64)
+      let photosHTML = '';
+      if (ad.photos && ad.photos.length > 0) {
+        const mainPhoto = ad.photos[0];
+        // Check if it's a URL (starts with http/https) or BASE64 (starts with data:)
+        if (mainPhoto && (mainPhoto.startsWith('http') || mainPhoto.startsWith('data:'))) {
+          photosHTML = `<img src="${mainPhoto}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3EPhoto unavailable%3C/text%3E%3C/svg%3E'">`;
+        } else {
+          photosHTML = `<div style="width: 100%; height: 200px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #999;">No photo</div>`;
+        }
+      } else {
+        photosHTML = `<div style="width: 100%; height: 200px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #999;">No photo</div>`;
+      }
+      
+      const adHTML = `
+        <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease;">
+          ${photosHTML}
+          <div style="padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+              <div>
+                <h3 style="margin: 0; color: #333; font-size: 1.1em;">${escapeHtml(ad.shopName)}</h3>
+                <small style="color: #999;">${escapeHtml(ad.userName)}</small>
+              </div>
+              ${boostBadge}
+            </div>
+            <p style="color: #666; font-size: 0.9em; margin: 8px 0;">${escapeHtml(ad.itemsDescription)}</p>
+            <p style="color: #1877f2; font-weight: 600; font-size: 1.1em; margin: 8px 0;">💰 ${escapeHtml(ad.price)}</p>
+            <p style="color: #999; font-size: 0.85em; margin: 8px 0;">📍 ${ad.location}</p>
+            <p style="color: #999; font-size: 0.8em; margin: 8px 0;">${timestamp}</p>
+            <div style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+              <button style="flex: 1; background: #1877f2; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600;">📞 Contact</button>
+              <button style="flex: 1; background: #f0f0f0; color: #333; border: none; padding: 8px; border-radius: 6px; cursor: pointer;">❤️ Save</button>
+            </div>
+          </div>
+        </div>
+      `;
+      adsHTML += adHTML;
+    });
+    
+    adsHTML += '</div>';
+    adsContainer.innerHTML = adsHTML;
+    console.log('✅ Ads loaded and displayed:', ads.length);
+  } catch (e) {
+    console.warn('⚠️ Error loading ads:', e.message);
+  }
 }
 
 // Wrap all addEventListener calls in try-catch
@@ -1086,6 +1332,12 @@ function initializeButtonHandlers() {
     if (adBtn && adBtn.id) {
       safeOnClick(adBtn.id, handleAdvertise);
     }
+    
+    // Load and display posts
+    loadAndDisplayPosts();
+    
+    // Load and display ads
+    loadAndDisplayAds();
     
     console.log('✅ Button handlers initialized');
   } catch (e) {
@@ -1552,18 +1804,24 @@ window.addEventListener('load', () => {
     <button id="closeMapBtn" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text); cursor: pointer; font-weight: 600;">Close Map</button>
   </div>
 
+  <!-- QUICK ACTION BUTTONS -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+    <button onclick="openPostModal()" style="padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer;">📝 Post</button>
+    <button onclick="openAdvertiseModal()" style="padding: 12px; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer;">🛍️ Advertise</button>
+  </div>
+
   <!-- SHOW MAP BUTTON -->
   <button id="showMapBtn" style="width: 100%; padding: 12px; background: var(--accent); color: var(--accent-text); border: none; border-radius: 8px; margin-bottom: 14px; cursor: pointer; font-weight: 600; font-size: 1rem;">🗺️ Show Map</button>
   <div class="composer">
     <div class="tabs">
-      <div class="tab post-tab active">📝 Post</div>
-      <div class="tab ad-tab">📢 Advertise</div>
+      <div class="tab post-tab active" onclick="switchTab('post')">📝 Post</div>
+      <div class="tab ad-tab" onclick="switchTab('ad')">📢 Advertise</div>
     </div>
 
     <div id="post-fields" style="display:block;">
       <textarea id="text-post-input" placeholder="What's on your mind?"></textarea>
       <div class="post-cost-note">Free to post</div>
-      <button class="post-btn">Post</button>
+      <button class="post-btn" onclick="handlePost()">Post</button>
     </div>
 
     <div id="ad-fields" style="display:none;">
@@ -1984,6 +2242,12 @@ window.addEventListener('load', () => {
 
   <!-- FEED -->
   <div id="feed-container"></div>
+  
+  <!-- ADVERTISEMENTS SECTION -->
+  <div style="margin-top: 40px;">
+    <h2 style="margin-bottom: 20px; color: #333;">🏪 Shop Advertisements</h2>
+    <div id="ads-container"></div>
+  </div>
 
 </div>
 
