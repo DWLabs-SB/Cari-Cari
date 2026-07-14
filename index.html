@@ -844,6 +844,24 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
 </style>
+
+<!-- ===== SUPABASE & R2 CONFIGURATION ===== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+  // ===== SUPABASE CONFIGURATION =====
+  const SUPABASE_URL = 'https://ihecqvosemcpxqweqity.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloZWNxdm9zZW1jcHhxd2VxbHR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NTg0MjMsImV4cCI6MjA5OTIzNDQyM30.ck6Priblat_M2Kd_ryIyQUsxDpOXxmUSsd9ox4_XGs0';
+  
+  // Initialize Supabase
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  // ===== R2 CONFIGURATION =====
+  const R2_PUBLIC_URL = 'https://pub-11e3f4324d8e43319eccdbeffb488911.r2.dev';
+  const R2_S3_ENDPOINT = 'https://69b5592ad214717d792fc9c661a78a4f.r2.cloudflarestorage.com';
+  const R2_BUCKET = 'cari-cari-files';
+</script>
+
 </head>
 <body>
 
@@ -1031,7 +1049,7 @@
         font-size: 1rem;
         cursor: pointer;
         margin-bottom: 12px;
-      " onclick="completeRegister()">Create Account</button>
+      " onclick="completeRegister().catch(e => console.error(e))">Create Account</button>
 
       <p style="text-align: center; color: var(--text-sub); font-size: 0.9rem;">
         Already have an account? <a onclick="showSignIn()" style="color: var(--accent); text-decoration: none; cursor: pointer; font-weight: 600;">Sign in</a>
@@ -1098,7 +1116,7 @@
         font-size: 1rem;
         cursor: pointer;
         margin-bottom: 12px;
-      " onclick="completeSignIn()">Sign In</button>
+      " onclick="completeSignIn().catch(e => console.error(e))">Sign In</button>
 
       <p style="text-align: center; color: var(--text-sub); font-size: 0.85rem; margin-bottom: 12px;">
         <a onclick="showForgotPassword()" style="color: var(--accent); text-decoration: none; cursor: pointer;">Forgot password?</a>
@@ -1742,7 +1760,7 @@
       <div class="post-cost-note">This will use 5 credits</div>
 
       <!-- SUBMIT BUTTON -->
-      <button class="post-btn" onclick="submitAdvertisement()">Post Advertisement</button>
+      <button class="post-btn" onclick="submitAdvertisement().catch(e => console.error(e))">Post Advertisement</button>
     </div>
   </div>
 
@@ -2160,7 +2178,7 @@
     showNotif('Password reset link sent to your email 📧');
   }
 
-  function completeRegister() {
+  async function completeRegister() {
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
@@ -2168,102 +2186,342 @@
     const agreed = document.getElementById('agreeTerms').checked;
 
     if (!name) {
-      showNotif('Please enter your name');
+      showNotif('❌ Please enter your name');
       return;
     }
     if (!email || !email.includes('@')) {
-      showNotif('Please enter a valid email');
+      showNotif('❌ Please enter a valid email');
       return;
     }
     if (!phone) {
-      showNotif('Please enter your phone number');
+      showNotif('❌ Please enter your phone number');
       return;
     }
     if (password.length < 8) {
-      showNotif('Password must be at least 8 characters');
+      showNotif('❌ Password must be at least 8 characters');
       return;
     }
     if (!agreed) {
-      showNotif('Please agree to PDPA Policy and Terms');
+      showNotif('❌ Please agree to PDPA Policy and Terms');
       return;
     }
 
-    // Save user
-    const userData = {
-      id: 'user-' + Date.now(),
-      name: name,
-      email: email,
-      phone: phone,
-      joinDate: new Date().toLocaleDateString(),
-      credits: 250,
-      membership: 'free'
-    };
+    try {
+      // Step 1: Create auth user with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password
+      });
 
-    localStorage.setItem('cariCariUser', JSON.stringify(userData));
-    isLoggedIn = true;
-    currentUser = userData;
+      if (authError) throw authError;
 
-    showNotif('✅ Account created! Welcome to Cari-Cari! 🎉');
-    enterApp();
+      // Step 2: Create user profile in users table
+      const { data: profileData, error: profileError } = await supabase
+        .from('users')
+        .insert({
+          auth_id: authData.user.id,
+          name: name,
+          email: email,
+          phone: phone,
+          credits: 250,
+          membership_type: 'free',
+          language: currentLanguage
+        })
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Step 3: Set current user
+      currentUser = profileData;
+      isLoggedIn = true;
+
+      showNotif('✅ Account created! Welcome to Cari-Cari! 🎉');
+
+      // Clear form
+      document.getElementById('regName').value = '';
+      document.getElementById('regEmail').value = '';
+      document.getElementById('regPhone').value = '';
+      document.getElementById('regPassword').value = '';
+      document.getElementById('agreeTerms').checked = false;
+
+      // Enter app after 1 second
+      setTimeout(() => {
+        enterApp();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      showNotif('❌ Error: ' + (error.message || 'Registration failed'));
+    }
   }
 
-  function completeSignIn() {
-    const email = document.getElementById('signinEmail').value.trim();
-    const password = document.getElementById('signinPassword').value.trim();
+  async function completeSignIn() {
+    const email = document.getElementById('signInEmail')?.value.trim() || document.getElementById('signinEmail')?.value.trim();
+    const password = document.getElementById('signInPassword')?.value.trim() || document.getElementById('signinPassword')?.value.trim();
 
     if (!email || !password) {
-      showNotif('Please enter email and password');
+      showNotif('❌ Please enter email and password');
       return;
     }
 
-    // For demo: Accept any email/password
-    // In production: Verify with Supabase Auth
-    const userData = {
-      id: 'user-' + Date.now(),
-      name: email.split('@')[0],
-      email: email,
-      phone: '+6019234567',
-      joinDate: new Date().toLocaleDateString(),
-      credits: 250,
-      membership: 'free'
-    };
+    try {
+      // Step 1: Sign in with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
 
-    localStorage.setItem('cariCariUser', JSON.stringify(userData));
-    isLoggedIn = true;
-    currentUser = userData;
+      if (authError) throw authError;
 
-    showNotif('✅ Welcome back! 👋');
-    enterApp();
+      // Step 2: Get user profile from database
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_id', authData.user.id)
+        .single();
+
+      if (userError) throw userError;
+
+      // Step 3: Set current user
+      currentUser = userData;
+      isLoggedIn = true;
+
+      showNotif('✅ Welcome back! 👋');
+
+      // Clear form
+      if (document.getElementById('signInEmail')) document.getElementById('signInEmail').value = '';
+      if (document.getElementById('signInPassword')) document.getElementById('signInPassword').value = '';
+      if (document.getElementById('signinEmail')) document.getElementById('signinEmail').value = '';
+      if (document.getElementById('signinPassword')) document.getElementById('signinPassword').value = '';
+
+      // Enter app
+      setTimeout(() => {
+        enterApp();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Sign in error:', error);
+      showNotif('❌ Invalid email or password');
+    }
   }
 
-  function enterApp() {
+  async function enterApp() {
     document.getElementById('authContainer').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     const creditsDisplay = document.getElementById('creditsDisplay');
-    if (creditsDisplay) {
+    if (creditsDisplay && currentUser) {
       creditsDisplay.textContent = '💾 ' + currentUser.credits + ' credits';
     }
+    // Load feed from Supabase
+    await loadFeedFromSupabase();
   }
 
   // Check if user is logged in
-  window.addEventListener('load', () => {
-    if (isLoggedIn) {
-      document.getElementById('authContainer').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-    } else {
+  window.addEventListener('load', async () => {
+    try {
+      // Check if user is logged in with Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Get user profile from database
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('auth_id', session.user.id)
+          .single();
+
+        if (userData) {
+          currentUser = userData;
+          isLoggedIn = true;
+          document.getElementById('authContainer').style.display = 'none';
+          document.getElementById('app').style.display = 'block';
+          await loadFeedFromSupabase();
+        }
+      } else {
+        document.getElementById('authContainer').style.display = 'block';
+        document.getElementById('splashScreen').style.display = 'flex';
+        updateLanguageDisplay();
+        updateLanguageButtons();
+      }
+    } catch (error) {
+      console.error('Session check error:', error);
       document.getElementById('authContainer').style.display = 'block';
       document.getElementById('splashScreen').style.display = 'flex';
-      updateLanguageDisplay();
-      updateLanguageButtons();
     }
   });
 
-  function logout() {
-    localStorage.removeItem('cariCariUser');
-    isLoggedIn = false;
-    currentUser = {};
-    showSplash();
-    showNotif('Logged out successfully');
+  // ===== SUPABASE FEED FUNCTIONS =====
+  
+  async function loadFeedFromSupabase() {
+    try {
+      // Load advertisements from Supabase
+      const { data: ads, error } = await supabase
+        .from('advertisements')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      // Clear existing feed
+      const feedArea = document.getElementById('feedArea');
+      if (feedArea) {
+        feedArea.innerHTML = '';
+      }
+
+      if (!ads || ads.length === 0) {
+        feedArea.innerHTML = '<p style="text-align: center; padding: 20px; color: var(--text-sub);">No ads yet. Be the first to post! 📢</p>';
+        return;
+      }
+
+      // Display each ad
+      for (let ad of ads) {
+        const feedItem = document.createElement('div');
+        feedItem.className = 'feed-item';
+        feedItem.innerHTML = `
+          <div class="feed-header">
+            <div class="avatar">👤</div>
+            <div style="flex: 1;">
+              <div style="font-weight: 600;">${ad.business_name}</div>
+              <div style="font-size: 0.85rem; color: var(--text-sub);">${ad.category}</div>
+            </div>
+          </div>
+          <div style="font-size: 1.2rem; font-weight: 600; color: var(--accent);">RM ${ad.price}</div>
+          <p style="margin: 12px 0;">${ad.description}</p>
+          <div style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--input-border);">
+            <button onclick="likeAd('${ad.id}')" style="flex: 1; padding: 8px; background: var(--input-bg); border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">❤️ Like (${ad.likes_count || 0})</button>
+            <button onclick="contactSeller('${ad.id}')" style="flex: 1; padding: 8px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">📱 Contact</button>
+            <button onclick="saveAd('${ad.id}')" style="flex: 1; padding: 8px; background: var(--input-bg); border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">💾 Save</button>
+          </div>
+        `;
+        feedArea.appendChild(feedItem);
+      }
+
+    } catch (error) {
+      console.error('Load feed error:', error);
+      const feedArea = document.getElementById('feedArea');
+      if (feedArea) {
+        feedArea.innerHTML = '<p style="text-align: center; padding: 20px; color: var(--text-sub);">Error loading feed. Please refresh.</p>';
+      }
+    }
+  }
+
+  async function submitAdvertisement() {
+    try {
+      const businessName = document.getElementById('ad-name')?.value.trim();
+      const category = document.getElementById('adCategory')?.value || document.getElementById('ad-category')?.value;
+      const price = document.getElementById('price-input')?.value;
+      const description = document.getElementById('ad-description')?.value.trim();
+      const phone = document.getElementById('ad-phone')?.value.trim();
+
+      if (!businessName || !category || !price || !description) {
+        showNotif('❌ Please fill in all fields');
+        return;
+      }
+
+      if (!currentUser) {
+        showNotif('❌ Please sign in first');
+        return;
+      }
+
+      // Create advertisement in database
+      const { data: adData, error: adError } = await supabase
+        .from('advertisements')
+        .insert({
+          user_id: currentUser.id,
+          business_name: businessName,
+          category: category,
+          price: parseFloat(price),
+          description: description,
+          location: currentUser.location || 'Sabah',
+          is_boosted: false,
+          likes_count: 0
+        })
+        .select()
+        .single();
+
+      if (adError) throw adError;
+
+      showNotif('✅ Advertisement posted successfully! 🎉');
+
+      // Clear form
+      if (document.getElementById('ad-name')) document.getElementById('ad-name').value = '';
+      if (document.getElementById('adCategory')) document.getElementById('adCategory').value = '';
+      if (document.getElementById('price-input')) document.getElementById('price-input').value = '';
+      if (document.getElementById('ad-description')) document.getElementById('ad-description').value = '';
+      if (document.getElementById('ad-phone')) document.getElementById('ad-phone').value = '';
+
+      // Refresh feed
+      setTimeout(async () => {
+        await loadFeedFromSupabase();
+      }, 500);
+
+    } catch (error) {
+      console.error('Advertisement error:', error);
+      showNotif('❌ Error: ' + (error.message || 'Failed to create ad'));
+    }
+  }
+
+  async function likeAd(adId) {
+    try {
+      const { data: ad } = await supabase
+        .from('advertisements')
+        .select('likes_count')
+        .eq('id', adId)
+        .single();
+
+      await supabase
+        .from('advertisements')
+        .update({ likes_count: (ad.likes_count || 0) + 1 })
+        .eq('id', adId);
+
+      await loadFeedFromSupabase();
+      showNotif('❤️ Liked!');
+    } catch (error) {
+      console.error('Like error:', error);
+    }
+  }
+
+  async function contactSeller(adId) {
+    try {
+      const { data: ad } = await supabase
+        .from('advertisements')
+        .select('business_name')
+        .eq('id', adId)
+        .single();
+
+      showNotif(`📱 Open WhatsApp to contact ${ad.business_name}`);
+    } catch (error) {
+      console.error('Contact error:', error);
+    }
+  }
+
+  async function saveAd(adId) {
+    try {
+      showNotif('💾 Ad saved!');
+    } catch (error) {
+      console.error('Save error:', error);
+    }
+  }
+
+  // ===== END SUPABASE FUNCTIONS =====
+
+
+    try {
+      await supabase.auth.signOut();
+      isLoggedIn = false;
+      currentUser = null;
+      showNotif('✅ Logged out successfully');
+      
+      // Go back to splash after 1 second
+      setTimeout(() => {
+        showSplash();
+      }, 1000);
+    } catch (error) {
+      console.error('Logout error:', error);
+      showNotif('❌ Error logging out');
+    }
   }
 
   // USER MENU
