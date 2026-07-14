@@ -180,6 +180,7 @@
   #app > * {
     max-width: 100%;
     width: 100%;
+    box-sizing: border-box;
   }
   
   /* Mobile responsive */
@@ -267,6 +268,139 @@
     }
     
     body { font-size: 17px; }
+  }
+  
+  /* ===== DASHBOARD-SPECIFIC DESKTOP OPTIMIZATION ===== */
+  
+  /* Desktop header optimization - full width */
+  @media (min-width: 769px) {
+    .header-row {
+      display: flex !important;
+      gap: 15px !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      width: 100% !important;
+      padding: 15px 0 !important;
+    }
+    
+    .search-box {
+      flex: 1 1 300px !important;
+      min-width: 250px !important;
+    }
+    
+    .search-box input {
+      width: 100% !important;
+      padding: 12px 15px !important;
+      font-size: 1rem !important;
+    }
+    
+    /* Category filter dropdown */
+    #categoryFilter, [id*="categoryFilter"] {
+      min-width: 120px !important;
+    }
+    
+    /* Icon buttons in header */
+    .icon-btn, [class*="icon-btn"] {
+      padding: 10px 15px !important;
+      font-size: 1.2rem !important;
+      cursor: pointer !important;
+      border-radius: 8px !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    .icon-btn:hover {
+      background: rgba(24, 119, 242, 0.1) !important;
+      transform: scale(1.1) !important;
+    }
+  }
+  
+  /* Desktop main content - wider container */
+  @media (min-width: 769px) {
+    #app > div:not(.hidden) {
+      width: 100% !important;
+      max-width: 100% !important;
+      padding: 0 !important;
+    }
+    
+    /* Stories section - horizontal scroll */
+    .stories, [class*="stories"], .story-container {
+      display: flex !important;
+      overflow-x: auto !important;
+      gap: 15px !important;
+      padding: 20px 0 !important;
+      margin-bottom: 20px !important;
+    }
+    
+    .story, [class*="story-item"] {
+      min-width: 100px !important;
+      flex-shrink: 0 !important;
+    }
+    
+    /* Feed/listings - wider grid */
+    .feed, .listings, [class*="feed"], [class*="listings"], .items-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+      gap: 20px !important;
+      width: 100% !important;
+      padding: 20px 0 !important;
+    }
+    
+    /* Desktop cards - better sizing */
+    .feed-item, .listing-card, [class*="feed-item"], [class*="listing"], [class*="card"] {
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+    
+    /* Desktop buttons - full width at bottom */
+    .button-group, .action-buttons, [class*="button-group"] {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+      gap: 15px !important;
+      width: 100% !important;
+      margin-top: 30px !important;
+    }
+    
+    /* Desktop sidebar optimization */
+    .sidebar, [class*="sidebar"] {
+      position: static !important;
+      width: auto !important;
+      display: flex !important;
+      gap: 20px !important;
+      flex-wrap: wrap !important;
+      margin-bottom: 20px !important;
+    }
+    
+    /* Two column layout on desktop */
+    .main-layout, [class*="main-layout"] {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 20px !important;
+      width: 100% !important;
+    }
+  }
+  
+  /* ULTRA WIDE DESKTOP (1200px+) - 3 column layouts */
+  @media (min-width: 1200px) {
+    .feed, .listings, [class*="feed"], [class*="listings"] {
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important;
+    }
+    
+    .sidebar, [class*="sidebar"] {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    }
+  }
+  
+  /* 4K DESKTOP (1600px+) - Maximize space */
+  @media (min-width: 1600px) {
+    .feed, .listings, [class*="feed"], [class*="listings"] {
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)) !important;
+      gap: 25px !important;
+    }
+    
+    .header-row {
+      gap: 20px !important;
+    }
   }
 </style>
 
