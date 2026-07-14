@@ -21,10 +21,55 @@
     --accent: #1877f2;
     --accent-text: #ffffff;
   }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
+    background: var(--bg); 
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
   
-  .auth-screen { width: 100%; height: 100vh; position: fixed; top: 0; left: 0; background: linear-gradient(135deg, #f0f4f8 0%, #e3f2fd 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; }
-  .auth-card { background: white; border-radius: 20px; padding: 40px 24px; max-width: 380px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.15); text-align: center; }
+  .auth-screen { 
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(135deg, #f0f4f8 0%, #e3f2fd 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  .auth-card { 
+    background: white;
+    border-radius: 20px;
+    padding: 40px 24px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    text-align: center;
+    margin: 0 auto;
+  }
+  
+  /* Desktop auth card - slightly wider on large screens */
+  @media (min-width: 768px) {
+    .auth-card {
+      max-width: 420px;
+      padding: 50px 35px;
+    }
+  }
+  
+  @media (min-width: 1200px) {
+    .auth-card {
+      max-width: 450px;
+      padding: 60px 40px;
+    }
+  }
   .logo { font-size: 3rem; margin-bottom: 16px; }
   .title { font-size: 1.8rem; color: var(--accent); margin-bottom: 8px; }
   .subtitle { color: #65676b; margin-bottom: 24px; }
@@ -33,16 +78,196 @@
   .lang-btn { flex: 1; padding: 10px; border: 1px solid var(--input-border); background: white; border-radius: 8px; cursor: pointer; font-weight: 600; }
   .lang-btn.active { background: var(--accent); color: white; }
   
-  button { border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
-  .btn-primary { width: 100%; padding: 12px; background: var(--accent); color: white; margin-bottom: 10px; }
-  .btn-secondary { width: 100%; padding: 12px; background: var(--input-bg); color: var(--text); border: 1px solid var(--input-border); margin-bottom: 10px; }
-  .btn-back { background: none; border: none; color: var(--accent); text-align: left; padding: 0; margin-bottom: 16px; font-weight: 600; width: auto; }
+  button { 
+    border: none; 
+    border-radius: 10px; 
+    font-weight: 600; 
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
   
-  input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid var(--input-border); border-radius: 8px; font-size: 1rem; font-family: inherit; }
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+  
+  .btn-primary { 
+    width: 100%; 
+    padding: 12px; 
+    background: var(--accent); 
+    color: white; 
+    margin-bottom: 10px;
+    font-size: 1rem;
+  }
+  
+  /* Desktop button optimization */
+  @media (min-width: 768px) {
+    .btn-primary {
+      padding: 14px;
+      font-size: 1.05rem;
+      margin-bottom: 12px;
+    }
+  }
+  
+  .btn-secondary { 
+    width: 100%; 
+    padding: 12px; 
+    background: var(--input-bg); 
+    color: var(--text); 
+    border: 1px solid var(--input-border); 
+    margin-bottom: 10px;
+    font-size: 1rem;
+  }
+  
+  @media (min-width: 768px) {
+    .btn-secondary {
+      padding: 14px;
+      font-size: 1.05rem;
+      margin-bottom: 12px;
+    }
+  }
+  
+  .btn-back { 
+    background: none; 
+    border: none; 
+    color: var(--accent); 
+    text-align: left; 
+    padding: 0; 
+    margin-bottom: 16px; 
+    font-weight: 600; 
+    width: auto;
+    font-size: 0.95rem;
+  }
+  
+  input { 
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 12px; 
+    border: 1px solid var(--input-border); 
+    border-radius: 8px; 
+    font-size: 1rem; 
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  
+  /* Desktop input optimization */
+  @media (min-width: 768px) {
+    input {
+      padding: 14px;
+      font-size: 1.05rem;
+      margin-bottom: 15px;
+    }
+  }
   label { display: flex; align-items: center; margin: 12px 0; cursor: pointer; }
   label input { width: auto; margin-right: 8px; margin-bottom: 0; }
   
   .hidden { display: none !important; }
+  
+  /* App container - responsive layout */
+  #app {
+    width: 100%;
+    min-height: 100vh;
+    display: block;
+    background: var(--bg);
+    overflow-x: hidden;
+  }
+  
+  #app.hidden {
+    display: none !important;
+  }
+  
+  /* Main content wrapper */
+  #app > * {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 480px) {
+    body { font-size: 13px; }
+    #app { width: 100%; padding: 0; }
+  }
+  
+  /* TABLET (481px - 768px) */
+  @media (min-width: 481px) and (max-width: 768px) {
+    body { font-size: 15px; }
+    #app { width: 100%; padding: 0 15px; }
+  }
+  
+  /* DESKTOP (769px+) - PRIMARY OPTIMIZATION */
+  @media (min-width: 769px) {
+    body { 
+      font-size: 16px; 
+      line-height: 1.6;
+    }
+    
+    #app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    #app > * {
+      max-width: 100%;
+    }
+    
+    /* Desktop header */
+    header, #header, [class*="header"] {
+      padding: 20px 0;
+    }
+    
+    /* Desktop grid layout */
+    .grid, [class*="grid"], 
+    .listings, [class*="listings"],
+    .feed, [class*="feed"] {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      max-width: 100%;
+    }
+    
+    /* Desktop cards */
+    .card, [class*="card"], 
+    [class*="listing"], [class*="item"] {
+      max-width: 100%;
+    }
+    
+    /* Desktop buttons - horizontal layout */
+    .button-group, [class*="button-group"],
+    .actions, [class*="actions"] {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    /* Desktop forms - wider */
+    form {
+      max-width: 600px;
+    }
+  }
+  
+  /* ULTRA WIDE (1200px+) */
+  @media (min-width: 1200px) {
+    #app {
+      max-width: 1200px;
+      padding: 0 40px;
+    }
+    
+    .grid, [class*="grid"] {
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 25px;
+    }
+  }
+  
+  /* 4K / MASSIVE SCREENS (1600px+) */
+  @media (min-width: 1600px) {
+    #app {
+      max-width: 1400px;
+      padding: 0 60px;
+    }
+    
+    body { font-size: 17px; }
+  }
 </style>
 
 <script>
@@ -226,6 +451,8 @@ async function doSignIn() {
       if (localUsers[email].pass !== pass) throw new Error('Wrong password');
       
       currentUser = localUsers[email];
+      // Save to localStorage for session persistence on page reload
+      localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
       console.log('✅ Signed in locally!');
     }
     
@@ -243,6 +470,46 @@ async function doSignIn() {
 }
 
 console.log('✅ Hybrid Auth System Ready (Local + Supabase)');
+
+// ===== AUTO-LOGIN ON PAGE LOAD =====
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    // Try to restore localStorage session first (local mode)
+    if (!useSupabase && localUsers) {
+      const storedUser = localStorage.getItem('cariCariCurrentUser');
+      if (storedUser) {
+        try {
+          currentUser = JSON.parse(storedUser);
+          isLoggedIn = true;
+          console.log('✅ Session restored from localStorage:', currentUser.email);
+          document.getElementById('authContainer').classList.add('hidden');
+          document.getElementById('app').classList.remove('hidden');
+          return;
+        } catch (e) {
+          console.log('⚠️ Could not restore localStorage session');
+        }
+      }
+    }
+    
+    // Check if user is already logged in (from current session)
+    if (isLoggedIn && currentUser) {
+      console.log('✅ Auto-restoring session for:', currentUser.email);
+      document.getElementById('authContainer').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+    } else if (useSupabase && supabaseReady) {
+      // Try to restore Supabase session
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          console.log('✅ Supabase session restored:', session.user.email);
+          isLoggedIn = true;
+          currentUser = session.user;
+          document.getElementById('authContainer').classList.add('hidden');
+          document.getElementById('app').classList.remove('hidden');
+        }
+      });
+    }
+  }, 500);
+});
 </script>
 
 </head>
@@ -1155,14 +1422,25 @@ console.log('✅ Hybrid Auth System Ready (Local + Supabase)');
     appLanguage = lang;
     localStorage.setItem('cariCariLanguage', lang);
     currentLanguage = lang;
-    updateLanguageDisplay();
-    updateLanguageButtons();
-    updateLanguage();
+    try {
+      updateLanguageDisplay();
+      updateLanguageButtons();
+      updateLanguage();
+    } catch (e) {
+      console.log('⚠️ Language update skipped (auth screen)', e.message);
+    }
   }
 
   function updateLanguageButtons() {
     const engBtn = document.getElementById('langBtnEng');
     const bmBtn = document.getElementById('langBtnBm');
+    
+    // Safety check - elements may not exist in auth screens
+    if (!engBtn || !bmBtn) {
+      console.log('⚠️ Language buttons not found (auth screen)');
+      return;
+    }
+    
     if (appLanguage === 'bm') {
       engBtn.style.background = 'transparent';
       engBtn.style.color = 'var(--text)';
@@ -1185,12 +1463,21 @@ console.log('✅ Hybrid Auth System Ready (Local + Supabase)');
   }
 
   function updateLanguageDisplay() {
+    const splashSubtitle = document.getElementById('splashSubtitle');
+    const langDisplay = document.getElementById('langDisplay');
+    
+    // Safety check - elements may not exist
+    if (!splashSubtitle || !langDisplay) {
+      console.log('⚠️ Language display elements not found');
+      return;
+    }
+    
     if (appLanguage === 'bm') {
-      document.getElementById('splashSubtitle').textContent = 'Pasaran Hyperlocal untuk Sabah';
-      document.getElementById('langDisplay').textContent = 'BM';
+      splashSubtitle.textContent = 'Pasaran Hyperlocal untuk Sabah';
+      langDisplay.textContent = 'BM';
     } else {
-      document.getElementById('splashSubtitle').textContent = 'Hyperlocal Marketplace for Sabah';
-      document.getElementById('langDisplay').textContent = 'ENG';
+      splashSubtitle.textContent = 'Hyperlocal Marketplace for Sabah';
+      langDisplay.textContent = 'ENG';
     }
   }
 
