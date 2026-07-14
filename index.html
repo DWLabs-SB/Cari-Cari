@@ -722,8 +722,7 @@ function handleShowMap() {
 
 function handlePost() {
   try {
-    alert('✏️ Post feature coming soon!');
-    console.log('Post clicked');
+    openPostModal();
   } catch (e) {
     console.warn('⚠️ Post handler error:', e.message);
   }
@@ -731,11 +730,275 @@ function handlePost() {
 
 function handleAdvertise() {
   try {
-    alert('📢 Advertise feature coming soon!');
-    console.log('Advertise clicked');
+    openAdvertiseModal();
   } catch (e) {
     console.warn('⚠️ Advertise handler error:', e.message);
   }
+}
+
+// ===== POST FUNCTIONS =====
+function openPostModal() {
+  document.getElementById('postModal').classList.remove('hidden');
+  document.getElementById('postText').value = '';
+}
+
+function closePostModal() {
+  document.getElementById('postModal').classList.add('hidden');
+}
+
+async function submitPost() {
+  const postText = document.getElementById('postText').value.trim();
+  
+  if (!postText) {
+    alert('❌ Please write something!');
+    return;
+  }
+  
+  try {
+    const post = {
+      id: Date.now(),
+      userId: currentUser.email,
+      userName: currentUser.name,
+      text: postText,
+      timestamp: new Date().toISOString(),
+      likes: 0
+    };
+    
+    // Save to localStorage
+    let posts = JSON.parse(localStorage.getItem('cariCariPosts') || '[]');
+    posts.unshift(post);
+    localStorage.setItem('cariCariPosts', JSON.stringify(posts));
+    
+    console.log('✅ Post created:', post);
+    alert('✅ Post shared successfully!');
+    closePostModal();
+    
+    // If deployed, also sync to Supabase
+    if (useSupabase && supabaseReady) {
+      try {
+        await supabaseClient.from('posts').insert([post]);
+        console.log('✅ Post synced to Supabase');
+      } catch (e) {
+        console.warn('⚠️ Supabase sync skipped');
+      }
+    }
+  } catch (err) {
+    alert('❌ Error creating post: ' + err.message);
+    console.error('Post error:', err);
+  }
+}
+
+// ===== ADVERTISE FUNCTIONS =====
+function openAdvertiseModal() {
+  document.getElementById('advertiseModal').classList.remove('hidden');
+  resetAdvertiseForm();
+  showAdvertiseStep(1);
+}
+
+function closeAdvertiseModal() {
+  document.getElementById('advertiseModal').classList.add('hidden');
+}
+
+function resetAdvertiseForm() {
+  document.getElementById('shopName').value = '';
+  document.getElementById('itemsDescription').value = '';
+  document.getElementById('price').value = '';
+  document.getElementById('photo1').value = '';
+  document.getElementById('photo2').value = '';
+  document.getElementById('photo3').value = '';
+  document.getElementById('locationText').value = '';
+  document.querySelector('input[name="boost"][value="none"]').checked = true;
+}
+
+function showAdvertiseStep(step) {
+  // Hide all steps
+  for (let i = 1; i <= 5; i++) {
+    const element = document.getElementById('step' + i);
+    if (element) element.classList.add('hidden');
+  }
+  
+  // Show current step
+  const currentElement = document.getElementById('step' + step);
+  if (currentElement) currentElement.classList.remove('hidden');
+  
+  // Update step indicator
+  document.getElementById('currentStep').textContent = step;
+  
+  // Initialize map on step 4
+  if (step === 4) {
+    setTimeout(initializeLocationMap, 300);
+  }
+}
+
+function nextAdvertiseStep(currentStep) {
+  if (currentStep === 1) {
+    if (!document.getElementById('shopName').value) {
+      alert('❌ Please enter shop name');
+      return;
+    }
+    if (!document.getElementById('itemsDescription').value) {
+      alert('❌ Please describe items/services');
+      return;
+    }
+    if (!document.getElementById('price').value) {
+      alert('❌ Please enter price');
+      return;
+    }
+  } else if (currentStep === 2) {
+    if (!document.getElementById('photo1').files[0]) {
+      alert('❌ Please upload main photo');
+      return;
+    }
+  }
+  
+  showAdvertiseStep(currentStep + 1);
+}
+
+function prevAdvertiseStep(currentStep) {
+  showAdvertiseStep(currentStep - 1);
+}
+
+// Photo preview handlers
+document.addEventListener('DOMContentLoaded', () => {
+  const photo1 = document.getElementById('photo1');
+  if (photo1) {
+    photo1.addEventListener('change', (e) => previewPhoto(e, 'photo1Preview'));
+  }
+  const photo2 = document.getElementById('photo2');
+  if (photo2) {
+    photo2.addEventListener('change', (e) => previewPhoto(e, 'photo2Preview'));
+  }
+  const photo3 = document.getElementById('photo3');
+  if (photo3) {
+    photo3.addEventListener('change', (e) => previewPhoto(e, 'photo3Preview'));
+  }
+});
+
+function previewPhoto(event, previewId) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const preview = document.getElementById(previewId);
+    if (preview) {
+      preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// Location map initialization
+let locationMap = null;
+let selectedLocation = null;
+
+function initializeLocationMap() {
+  try {
+    const mapContainer = document.getElementById('locationMap');
+    if (!mapContainer) return;
+    
+    // Check if Leaflet is available
+    if (typeof L === 'undefined') {
+      console.warn('⚠️ Leaflet not loaded yet');
+      setTimeout(initializeLocationMap, 500);
+      return;
+    }
+    
+    // Initialize map (centered on Kota Kinabalu, Sabah)
+    if (!locationMap) {
+      locationMap = L.map('locationMap').setView([5.3520, 115.2381], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19
+      }).addTo(locationMap);
+    }
+    
+    // Handle map clicks
+    locationMap.on('click', (e) => {
+      selectedLocation = e.latlng;
+      document.getElementById('locationText').value = `${e.latlng.lat.toFixed(4)},${e.latlng.lng.toFixed(4)}`;
+      document.getElementById('locationDisplay').textContent = `📍 Location: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
+      
+      // Remove old marker and add new one
+      document.querySelectorAll('.location-marker').forEach(m => m.remove());
+      L.marker(e.latlng, { title: 'Shop Location' }).addTo(locationMap).bindPopup('📍 Your Shop').openPopup();
+    });
+  } catch (e) {
+    console.warn('⚠️ Location map error:', e.message);
+  }
+}
+
+async function submitAdvertisement() {
+  const shopName = document.getElementById('shopName').value.trim();
+  const itemsDescription = document.getElementById('itemsDescription').value.trim();
+  const price = document.getElementById('price').value.trim();
+  const photo1 = document.getElementById('photo1').files[0];
+  const boost = document.querySelector('input[name="boost"]:checked').value;
+  const location = document.getElementById('locationText').value;
+  
+  if (!shopName || !itemsDescription || !price || !photo1) {
+    alert('❌ Please fill all required fields and upload main photo');
+    return;
+  }
+  
+  if (!location) {
+    alert('❌ Please select location on map');
+    return;
+  }
+  
+  try {
+    // Convert photos to base64 for localStorage
+    const photo1Base64 = await fileToBase64(photo1);
+    const photo2Base64 = document.getElementById('photo2').files[0] ? await fileToBase64(document.getElementById('photo2').files[0]) : null;
+    const photo3Base64 = document.getElementById('photo3').files[0] ? await fileToBase64(document.getElementById('photo3').files[0]) : null;
+    
+    const advertisement = {
+      id: Date.now(),
+      userId: currentUser.email,
+      userName: currentUser.name,
+      shopName: shopName,
+      itemsDescription: itemsDescription,
+      price: price,
+      photos: [photo1Base64, photo2Base64, photo3Base64].filter(p => p),
+      location: location,
+      boost: boost !== 'none' ? boost : null,
+      boostDays: boost === '1day' ? 1 : boost === '3days' ? 3 : boost === '1week' ? 7 : 0,
+      timestamp: new Date().toISOString(),
+      views: 0,
+      isBoosted: boost !== 'none'
+    };
+    
+    // Save to localStorage
+    let ads = JSON.parse(localStorage.getItem('cariCariAdvertisements') || '[]');
+    ads.unshift(advertisement);
+    localStorage.setItem('cariCariAdvertisements', JSON.stringify(ads));
+    
+    console.log('✅ Advertisement created:', advertisement);
+    alert('✅ Advertisement posted successfully!');
+    closeAdvertiseModal();
+    
+    // If deployed, also sync to Supabase
+    if (useSupabase && supabaseReady) {
+      try {
+        await supabaseClient.from('advertisements').insert([advertisement]);
+        console.log('✅ Advertisement synced to Supabase');
+      } catch (e) {
+        console.warn('⚠️ Supabase sync skipped');
+      }
+    }
+  } catch (err) {
+    alert('❌ Error creating advertisement: ' + err.message);
+    console.error('Advertise error:', err);
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // Wrap all addEventListener calls in try-catch
@@ -1759,8 +2022,199 @@ window.addEventListener('load', () => {
   </div>
 </div>
 
-<!-- TOAST -->
-<div id="toast"></div>
+<!-- POST MODAL -->
+<div id="postModal" class="modal hidden">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closePostModal()">✕</button>
+    <h2>What's on your mind?</h2>
+    
+    <textarea id="postText" placeholder="Share an update, question, or thought with your community..." 
+              style="width: 100%; height: 120px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
+    
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+      <button class="btn-secondary" style="flex: 1;" onclick="closePostModal()">Cancel</button>
+      <button class="btn-primary" style="flex: 1;" onclick="submitPost()">Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADVERTISE MODAL -->
+<div id="advertiseModal" class="modal hidden">
+  <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <button class="modal-close" onclick="closeAdvertiseModal()">✕</button>
+    <h2>Create Shop Advertisement</h2>
+    
+    <!-- Step indicator -->
+    <div id="advertiseStep" style="text-align: center; margin-bottom: 20px; color: #666;">
+      <small>Step <span id="currentStep">1</span> of 5</small>
+    </div>
+    
+    <!-- Step 1: Shop Info -->
+    <div id="step1" class="form-step">
+      <h3>📱 Shop Information</h3>
+      <input id="shopName" type="text" placeholder="Shop Name (e.g., Ali's Laundry)" style="width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px;">
+      <textarea id="itemsDescription" placeholder="What items/services do you sell? (e.g., Laundry, Dry Cleaning, Shoe Cleaning)" style="width: 100%; height: 80px; padding: 10px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px;"></textarea>
+      <input id="price" type="text" placeholder="Price/Rate (e.g., RM 5-15 per item)" style="width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px;">
+      <button class="btn-primary" style="width: 100%;" onclick="nextAdvertiseStep(1)">Next →</button>
+    </div>
+    
+    <!-- Step 2: Main Photo -->
+    <div id="step2" class="form-step hidden">
+      <h3>📸 Shop Photo (Main)</h3>
+      <p style="color: #666; font-size: 0.9em;">Upload a photo of your shop front or main item</p>
+      <input id="photo1" type="file" accept="image/*" style="width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px;">
+      <div id="photo1Preview" style="width: 100%; height: 200px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #999;">
+        Photo preview
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-secondary" style="flex: 1;" onclick="prevAdvertiseStep(2)">← Back</button>
+        <button class="btn-primary" style="flex: 1;" onclick="nextAdvertiseStep(2)">Next →</button>
+      </div>
+    </div>
+    
+    <!-- Step 3: Additional Photos -->
+    <div id="step3" class="form-step hidden">
+      <h3>📸 Additional Photos</h3>
+      <p style="color: #666; font-size: 0.9em;">Upload 2 more photos (optional but recommended)</p>
+      
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px;">Photo 2:</label>
+        <input id="photo2" type="file" accept="image/*" style="width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 8px;">
+        <div id="photo2Preview" style="width: 100%; height: 150px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999;">
+          Photo preview (optional)
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px;">Photo 3:</label>
+        <input id="photo3" type="file" accept="image/*" style="width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 8px;">
+        <div id="photo3Preview" style="width: 100%; height: 150px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999;">
+          Photo preview (optional)
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-secondary" style="flex: 1;" onclick="prevAdvertiseStep(3)">← Back</button>
+        <button class="btn-primary" style="flex: 1;" onclick="nextAdvertiseStep(3)">Next →</button>
+      </div>
+    </div>
+    
+    <!-- Step 4: Location -->
+    <div id="step4" class="form-step hidden">
+      <h3>📍 Shop Location</h3>
+      <p style="color: #666; font-size: 0.9em;">Pinpoint your shop location on the map</p>
+      <div id="locationMap" style="width: 100%; height: 300px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; background: #f0f0f0;"></div>
+      <p id="locationDisplay" style="color: #666; font-size: 0.9em; margin-bottom: 12px;">Click on map to set location</p>
+      <input id="locationText" type="hidden">
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-secondary" style="flex: 1;" onclick="prevAdvertiseStep(4)">← Back</button>
+        <button class="btn-primary" style="flex: 1;" onclick="nextAdvertiseStep(4)">Next →</button>
+      </div>
+    </div>
+    
+    <!-- Step 5: Boost Option -->
+    <div id="step5" class="form-step hidden">
+      <h3>🚀 Boost Your Ad (Optional)</h3>
+      <p style="color: #666; margin-bottom: 15px;">Want to boost your listing for more visibility?</p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <label style="display: flex; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer;">
+          <input type="radio" name="boost" value="none" checked> 
+          <span style="margin-left: 8px;">No Boost</span>
+        </label>
+        <label style="display: flex; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer;">
+          <input type="radio" name="boost" value="1day">
+          <span style="margin-left: 8px;">1 Day (10💰)</span>
+        </label>
+        <label style="display: flex; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer;">
+          <input type="radio" name="boost" value="3days">
+          <span style="margin-left: 8px;">3 Days (25💰)</span>
+        </label>
+        <label style="display: flex; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer;">
+          <input type="radio" name="boost" value="1week">
+          <span style="margin-left: 8px;">1 Week (50💰)</span>
+        </label>
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-secondary" style="flex: 1;" onclick="prevAdvertiseStep(5)">← Back</button>
+        <button class="btn-primary" style="flex: 1;" onclick="submitAdvertisement()">Save Advertisement</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL STYLES -->
+<style>
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    padding: 20px;
+  }
+  
+  .modal.hidden {
+    display: none !important;
+  }
+  
+  .modal-content {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    position: relative;
+  }
+  
+  .modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+  }
+  
+  .modal-close:hover {
+    color: #333;
+  }
+  
+  .form-step {
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .form-step.hidden {
+    display: none !important;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .modal h2 {
+    margin-bottom: 20px;
+    color: #1877f2;
+  }
+  
+  .modal h3 {
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: #333;
+  }
+</style>
 
 <!-- THEME TOGGLE -->
 <button class="theme-toggle">🌙</button>
