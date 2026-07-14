@@ -16,30 +16,33 @@
   
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    background: linear-gradient(135deg, #f0f4f8 0%, #e3f2fd 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
   }
   
   .screen { display: none; }
   .screen.active { display: flex; }
   
-  .splash-card {
+  .auth-screen {
+    background: linear-gradient(135deg, #f0f4f8 0%, #e3f2fd 100%);
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  
+  .auth-card {
     background: white;
     border-radius: 20px;
     padding: 40px 24px;
     max-width: 380px;
     width: 100%;
-    text-align: center;
     box-shadow: 0 10px 40px rgba(0,0,0,0.15);
   }
   
-  .logo { font-size: 3rem; margin-bottom: 16px; }
-  .title { font-size: 1.8rem; color: var(--accent); margin-bottom: 8px; }
-  .subtitle { color: #65676b; margin-bottom: 24px; }
+  .logo { font-size: 3rem; text-align: center; margin-bottom: 16px; }
+  .title { font-size: 1.8rem; color: var(--accent); text-align: center; margin-bottom: 8px; }
+  .subtitle { color: #65676b; text-align: center; margin-bottom: 24px; }
   
   .lang-selector {
     display: flex;
@@ -65,15 +68,15 @@
   }
   
   button {
-    width: 100%;
-    padding: 12px;
     border: none;
     border-radius: 10px;
     font-weight: 600;
     font-size: 1rem;
     cursor: pointer;
-    margin-bottom: 10px;
     transition: all 0.2s;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
   }
   
   .btn-primary {
@@ -91,218 +94,278 @@
   
   .btn-secondary:hover { background: #e4e6eb; }
   
-  .form-group {
-    margin-bottom: 16px;
+  .btn-back {
+    background: none;
+    border: none;
+    color: var(--accent);
     text-align: left;
+    padding: 0;
+    margin-bottom: 16px;
+    font-weight: 600;
+    width: auto;
   }
+  
+  .btn-danger { background: #dc3545; color: white; }
+  .btn-danger:hover { opacity: 0.9; }
   
   input {
     width: 100%;
     padding: 12px;
+    margin-bottom: 12px;
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 1rem;
     font-family: inherit;
   }
   
-  h2 { margin-bottom: 16px; color: var(--text); }
+  label { display: flex; align-items: center; margin: 12px 0; cursor: pointer; }
+  label input { width: auto; margin-right: 8px; margin-bottom: 0; }
   
-  .form-screen {
+  .app-container { width: 100%; display: flex; flex-direction: column; min-height: 100vh; }
+  
+  .header-row {
     background: white;
-    border-radius: 20px;
-    padding: 24px;
-    max-width: 400px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .header-row h1 { color: var(--accent); margin: 0; font-size: 1.5rem; }
+  
+  .feed-section {
+    max-width: 1200px;
+    margin: 20px auto;
     width: 100%;
-    max-height: 90vh;
+    padding: 0 16px;
+  }
+  
+  .feed-item {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .feed-item h3 { color: var(--text); margin-bottom: 8px; }
+  .feed-item p { color: #65676b; font-size: 0.9rem; margin: 4px 0; }
+  
+  .price { color: var(--accent); font-weight: 600; font-size: 1.2rem; margin: 8px 0; }
+  
+  .pdpa-content {
+    height: 300px;
     overflow-y: auto;
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin: 20px 0;
   }
-  
-  .back-btn {
-    text-align: left;
-    margin-bottom: 16px;
-    padding: 0;
-    background: none;
-    color: var(--accent);
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  
-  .pdpa-text { text-align: left; max-height: 400px; overflow-y: auto; margin: 20px 0; font-size: 0.9rem; line-height: 1.6; }
-  
-  .checkbox-group { text-align: left; margin: 20px 0; }
-  .checkbox-group input { width: auto; margin-right: 8px; }
-  .checkbox-group label { cursor: pointer; }
-  
-  .success-msg { color: green; text-align: center; padding: 20px; }
 </style>
 </head>
 <body>
 
 <!-- SPLASH SCREEN -->
-<div id="splash" class="screen active">
-  <div class="splash-card">
+<div id="splash" class="screen auth-screen active">
+  <div class="auth-card">
     <div class="logo">🏪</div>
     <h1 class="title">Cari-Cari</h1>
     <p class="subtitle">Hyperlocal Marketplace for Sabah</p>
     
     <div class="lang-selector">
-      <button class="lang-btn active" onclick="setLanguage('eng')">🇬🇧 ENG</button>
-      <button class="lang-btn" onclick="setLanguage('bm')">🇲🇾 BM</button>
+      <button class="lang-btn active" onclick="setLang('eng')">🇬🇧 ENG</button>
+      <button class="lang-btn" onclick="setLang('bm')">🇲🇾 BM</button>
     </div>
     
-    <button class="btn-primary" onclick="showScreen('signin')">Sign In</button>
-    <button class="btn-secondary" onclick="showScreen('register')">Create Account</button>
-    <p style="margin-top: 16px; font-size: 0.9rem;"><a onclick="showScreen('pdpa')" style="color: var(--accent); cursor: pointer; text-decoration: none;">Read PDPA Policy</a></p>
-  </div>
-</div>
-
-<!-- SIGN IN SCREEN -->
-<div id="signin" class="screen">
-  <div class="form-screen">
-    <button class="back-btn" onclick="showScreen('splash')">← Back</button>
-    <h2>Welcome Back</h2>
-    <p style="color: #65676b; margin-bottom: 20px;">Sign in to access Cari-Cari</p>
-    
-    <div class="form-group">
-      <input type="email" id="signinEmail" placeholder="Email Address">
-    </div>
-    <div class="form-group">
-      <input type="password" id="signinPassword" placeholder="Password">
-    </div>
-    
-    <button class="btn-primary" onclick="handleSignIn()">Sign In</button>
+    <button class="btn-primary" onclick="goSignIn()">Sign In</button>
+    <button class="btn-secondary" onclick="goSignUp()">Create Account</button>
     <p style="text-align: center; font-size: 0.9rem; margin-top: 16px;">
-      Don't have an account? <a onclick="showScreen('register')" style="color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600;">Create one</a>
+      <a href="javascript:goPDPA()" style="color: var(--accent); cursor: pointer; text-decoration: none;">Read PDPA Policy</a>
     </p>
   </div>
 </div>
 
-<!-- REGISTER SCREEN -->
-<div id="register" class="screen">
-  <div class="form-screen">
-    <button class="back-btn" onclick="showScreen('splash')">← Back</button>
-    <h2>Create Account</h2>
-    <p style="color: #65676b; margin-bottom: 20px;">Join Cari-Cari and start selling locally</p>
+<!-- SIGNUP SCREEN -->
+<div id="signup" class="screen auth-screen">
+  <div class="auth-card">
+    <button class="btn-back" onclick="goSplash()">← Back</button>
+    <h1 class="title">Create Account</h1>
+    <p class="subtitle">Join Cari-Cari today</p>
     
-    <div class="form-group">
-      <input type="text" id="regName" placeholder="Full Name">
-    </div>
-    <div class="form-group">
-      <input type="email" id="regEmail" placeholder="Email Address">
-    </div>
-    <div class="form-group">
-      <input type="tel" id="regPhone" placeholder="Phone Number">
-    </div>
-    <div class="form-group">
-      <input type="password" id="regPassword" placeholder="Password (min 8 characters)">
-    </div>
+    <input type="text" id="name" placeholder="Full Name">
+    <input type="email" id="email" placeholder="Email">
+    <input type="tel" id="phone" placeholder="Phone">
+    <input type="password" id="pass" placeholder="Password (8+ chars)">
     
-    <div class="checkbox-group">
-      <input type="checkbox" id="pdpaCheck">
-      <label for="pdpaCheck">I agree to PDPA Policy & Terms</label>
-    </div>
+    <label>
+      <input type="checkbox" id="pdpa">
+      I agree to PDPA Policy & Terms
+    </label>
     
-    <button class="btn-primary" onclick="handleRegister()">Create Account</button>
-    <p style="text-align: center; font-size: 0.9rem; margin-top: 16px;">
-      Already have an account? <a onclick="showScreen('signin')" style="color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600;">Sign in</a>
-    </p>
+    <button class="btn-primary" onclick="doSignUp()">Create Account</button>
+  </div>
+</div>
+
+<!-- SIGNIN SCREEN -->
+<div id="signin" class="screen auth-screen">
+  <div class="auth-card">
+    <button class="btn-back" onclick="goSplash()">← Back</button>
+    <h1 class="title">Sign In</h1>
+    <p class="subtitle">Welcome back</p>
+    
+    <input type="email" id="signinEmail" placeholder="Email">
+    <input type="password" id="signinPass" placeholder="Password">
+    
+    <button class="btn-primary" onclick="doSignIn()">Sign In</button>
   </div>
 </div>
 
 <!-- PDPA SCREEN -->
-<div id="pdpa" class="screen">
-  <div class="form-screen">
-    <button class="back-btn" onclick="showScreen('splash')">← Back</button>
-    <h2>Personal Data Protection Policy</h2>
+<div id="pdpa" class="screen auth-screen">
+  <div class="auth-card">
+    <button class="btn-back" onclick="goSplash()">← Back</button>
+    <h1 class="title">PDPA Policy</h1>
     
-    <div class="pdpa-text">
-      <h3>1. Introduction</h3>
-      <p>Cari-Cari respects your privacy and is committed to protecting your personal data.</p>
-      
-      <h3>2. Data We Collect</h3>
-      <p>We collect: Full Name, Email, Phone Number, Business Information, Location Data, Transaction History, Device Information, Usage Analytics.</p>
-      
-      <h3>3. How We Use Your Data</h3>
-      <p>Your data is used for: Account creation, Marketplace services, Payment processing, Communication, Service improvement, Legal compliance, Fraud prevention.</p>
-      
-      <h3>4. Data Security</h3>
-      <p>We implement industry-standard security measures: HTTPS encryption, Secure password hashing, Limited access to personal data, Regular security audits.</p>
-      
-      <h3>5. Your Rights</h3>
-      <p>You have the right to access, correct, and delete your personal data.</p>
+    <div class="pdpa-content">
+      <h3>Personal Data Protection Policy</h3>
+      <p><strong>1. Introduction</strong><br>Cari-Cari respects your privacy and is committed to protecting your personal data.</p>
+      <p><strong>2. Data We Collect</strong><br>We collect: Full Name, Email, Phone Number, Business Information, Location Data, Transaction History.</p>
+      <p><strong>3. How We Use Your Data</strong><br>Your data is used for: Account creation, Marketplace services, Payment processing, Communication, Service improvement.</p>
+      <p><strong>4. Data Security</strong><br>We implement industry-standard security measures including HTTPS encryption and secure password hashing.</p>
+      <p><strong>5. Your Rights</strong><br>You have the right to access, correct, and delete your personal data.</p>
     </div>
     
-    <button class="btn-primary" onclick="showScreen('splash')">I Understand</button>
+    <button class="btn-primary" onclick="goSplash()">I Understand</button>
+  </div>
+</div>
+
+<!-- DASHBOARD SCREEN -->
+<div id="dashboard" class="screen">
+  <div class="app-container">
+    <div class="header-row">
+      <div>
+        <h1>🏪 Cari-Cari</h1>
+        <p style="color: #65676b; margin: 4px 0;">Welcome, <span id="dashName">User</span>! 👋</p>
+      </div>
+      <button class="btn-danger" onclick="doLogout()">Logout</button>
+    </div>
+    
+    <div class="feed-section">
+      <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h2 style="color: var(--accent); margin-bottom: 12px;">🎉 Welcome to Cari-Cari Marketplace!</h2>
+        <p>Browse local businesses, post ads, and connect with your community in Sabah.</p>
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button class="btn-primary" style="flex: 1;" onclick="alert('📝 Post Ad feature coming soon!')">Post Ad</button>
+          <button class="btn-secondary" style="flex: 1;" onclick="alert('🔍 Browse feature coming soon!')">Browse</button>
+        </div>
+      </div>
+      
+      <h3>Featured Listings</h3>
+      
+      <div class="feed-item">
+        <h3>🍽️ Local Restaurant - Kampung Cuisine</h3>
+        <p>Traditional Sabahan food - Fresh daily cooking</p>
+        <div class="price">RM 15-30 per meal</div>
+        <p>📍 Kota Kinabalu, Sabah • 5 km away</p>
+      </div>
+      
+      <div class="feed-item">
+        <h3>🛠️ Plumbing Services - Quick Fix</h3>
+        <p>Professional plumbing repairs and installation</p>
+        <div class="price">RM 50-150 per job</div>
+        <p>📍 Kota Kinabalu, Sabah • 3 km away</p>
+      </div>
+      
+      <div class="feed-item">
+        <h3>📱 Mobile Repair - TechHub</h3>
+        <p>Phone & tablet repair services</p>
+        <div class="price">RM 30-100 per service</div>
+        <p>📍 Kota Kinabalu, Sabah • 2 km away</p>
+      </div>
+      
+      <div class="feed-item">
+        <h3>☕ Coffee Shop - The Brew</h3>
+        <p>Specialty coffee and pastries</p>
+        <div class="price">RM 6-15 per item</div>
+        <p>📍 Kota Kinabalu, Sabah • 1 km away</p>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-// ===== SIMPLE STATE MANAGEMENT =====
-let currentLanguage = 'eng';
+// ===== AUTH SYSTEM =====
+let users = {};
 let currentUser = null;
 
-// ===== UI FUNCTIONS =====
-function showScreen(screenId) {
-  // Hide all screens
+function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  // Show selected screen
-  document.getElementById(screenId).classList.add('active');
+  document.getElementById(id).classList.add('active');
 }
 
-function setLanguage(lang) {
-  currentLanguage = lang;
-  // Update language buttons
-  document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+function goSplash() { showScreen('splash'); }
+function goSignUp() { showScreen('signup'); }
+function goSignIn() { showScreen('signin'); }
+function goPDPA() { showScreen('pdpa'); }
+
+function setLang(lang) {
+  const langs = lang === 'eng' ? 'English' : 'Bahasa Melayu';
+  alert('✅ Language set to: ' + langs);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
-  alert(lang === 'eng' ? 'Language set to English' : 'Bahasa set to Melayu');
 }
 
-// ===== SIGN IN =====
-function handleSignIn() {
+function doSignUp() {
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const pass = document.getElementById('pass').value.trim();
+  const pdpa = document.getElementById('pdpa').checked;
+  
+  if (!name || !email || !phone || !pass) { alert('❌ Please fill all fields!'); return; }
+  if (pass.length < 8) { alert('❌ Password must be 8+ characters!'); return; }
+  if (!pdpa) { alert('❌ Please agree to PDPA Policy!'); return; }
+  if (users[email]) { alert('❌ Email already registered!'); return; }
+  
+  users[email] = { name, email, phone, pass };
+  alert('✅ Account created! Now sign in.');
+  document.getElementById('name').value = '';
+  document.getElementById('email').value = '';
+  document.getElementById('phone').value = '';
+  document.getElementById('pass').value = '';
+  document.getElementById('pdpa').checked = false;
+  goSignIn();
+}
+
+function doSignIn() {
   const email = document.getElementById('signinEmail').value.trim();
-  const password = document.getElementById('signinPassword').value.trim();
+  const pass = document.getElementById('signinPass').value.trim();
   
-  if (!email || !password) {
-    alert('Please enter email and password');
-    return;
+  if (!email || !pass) { alert('❌ Please enter email and password!'); return; }
+  if (!users[email]) { alert('❌ Email not found. Create an account first!'); return; }
+  if (users[email].pass !== pass) { alert('❌ Wrong password!'); return; }
+  
+  currentUser = users[email];
+  document.getElementById('dashName').textContent = currentUser.name;
+  document.getElementById('signinEmail').value = '';
+  document.getElementById('signinPass').value = '';
+  showScreen('dashboard');
+}
+
+function doLogout() {
+  if (confirm('Are you sure you want to logout?')) {
+    currentUser = null;
+    goSplash();
+    alert('✅ Logged out successfully');
   }
-  
-  // Simulate sign in
-  currentUser = { email, name: email.split('@')[0] };
-  alert('✅ Signed in as ' + email);
-  showScreen('splash');
 }
 
-// ===== REGISTER =====
-function handleRegister() {
-  const name = document.getElementById('regName').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const phone = document.getElementById('regPhone').value.trim();
-  const password = document.getElementById('regPassword').value.trim();
-  const pdpaCheck = document.getElementById('pdpaCheck').checked;
-  
-  if (!name) { alert('Please enter your name'); return; }
-  if (!email) { alert('Please enter your email'); return; }
-  if (!phone) { alert('Please enter your phone'); return; }
-  if (password.length < 8) { alert('Password must be at least 8 characters'); return; }
-  if (!pdpaCheck) { alert('Please agree to PDPA Policy'); return; }
-  
-  // Simulate account creation
-  currentUser = { email, name, phone };
-  alert('✅ Account created! Welcome ' + name);
-  
-  // Clear form
-  document.getElementById('regName').value = '';
-  document.getElementById('regEmail').value = '';
-  document.getElementById('regPhone').value = '';
-  document.getElementById('regPassword').value = '';
-  document.getElementById('pdpaCheck').checked = false;
-  
-  showScreen('splash');
-}
-
-console.log('✅ App ready! Click buttons to test.');
+console.log('✅ Cari-Cari Ready! Sign up and log in to access the dashboard.');
 </script>
 
 </body>
