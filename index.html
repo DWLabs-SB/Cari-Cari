@@ -1940,31 +1940,9 @@
   // Distance info hidden until the user opts into Nearby
   document.getElementById('distance-info').style.display = 'none';
 
-  // ===== SHOP DATA WITH CATEGORIES & LOCATIONS =====
-  const shops = [
-    // Eatery
-    { id: 1, name: 'Fresh Nasi Kuning', category: 'eatery', location: 'Setapak', distance: 1.5, price: '15 RM', rating: 4.8, lat: 3.1357, lng: 101.6880 },
-    { id: 2, name: 'Organic Coffee Roastery', category: 'eatery', location: 'Bangsar', distance: 1.8, price: '12-18 RM', rating: 4.9, lat: 3.1241, lng: 101.6557 },
-    { id: 3, name: 'Starbucks Kota', category: 'eatery', location: 'Waterfront', distance: 2.5, price: '8-12 RM', rating: 4.5, lat: 3.1450, lng: 101.6920 },
-    { id: 4, name: 'Dimsum House', category: 'eatery', location: 'Sembulan', distance: 1.6, price: '8-15 RM', rating: 4.7, lat: 3.1485, lng: 101.6542 },
-    
-    // Services
-    { id: 5, name: 'Laptop Repair Pro', category: 'services', location: 'Mid Valley', distance: 2.0, price: 'From 80 RM', rating: 4.6, lat: 3.1189, lng: 101.6107 },
-    { id: 6, name: 'Personal Training', category: 'services', location: 'Pavilion', distance: 2.1, price: '150 RM/hr', rating: 4.8, lat: 3.1155, lng: 101.6123 },
-    { id: 7, name: 'Car Detailing', category: 'services', location: 'Kolombong', distance: 1.7, price: 'From 50 RM', rating: 4.7, lat: 3.1289, lng: 101.6743 },
-    { id: 8, name: 'Phone Repair Service', category: 'services', location: 'City Mall', distance: 1.4, price: 'From 30 RM', rating: 4.6, lat: 3.1320, lng: 101.6845 },
-    
-    // Minimarket
-    { id: 9, name: 'Watsons Pharmacy', category: 'minimarket', location: 'KCC', distance: 1.2, price: 'Varies', rating: 4.5, lat: 3.1345, lng: 101.6912 },
-    { id: 10, name: 'Phone Accessories Store', category: 'minimarket', location: 'City Mall', distance: 1.9, price: 'Varies', rating: 4.4, lat: 3.1330, lng: 101.6850 },
-    { id: 11, name: 'Organic Vegetables', category: 'minimarket', location: 'Tanjung Aru', distance: 2.3, price: 'Wholesale', rating: 4.8, lat: 3.1420, lng: 101.6340 },
-    { id: 12, name: '7-Eleven Express', category: 'minimarket', location: 'Kepayan', distance: 0.8, price: 'Standard', rating: 4.3, lat: 3.1275, lng: 101.6520 },
-    
-    // Product
-    { id: 13, name: 'Handmade Crafts', category: 'product', location: 'Inanam', distance: 2.0, price: '20-100 RM', rating: 4.9, lat: 3.1520, lng: 101.6800 },
-    { id: 14, name: 'Vintage Furniture', category: 'product', location: 'Kepayan', distance: 1.8, price: '100-500 RM', rating: 4.7, lat: 3.1265, lng: 101.6515 },
-    { id: 15, name: 'Artisan Goods', category: 'product', location: 'Taman Selera', distance: 1.3, price: '10-200 RM', rating: 4.8, lat: 3.1390, lng: 101.6690 },
-  ];
+  // ===== SHOP DATA =====
+  // Empty by default — the map fills with real ads that sellers pin.
+  const shops = [];
 
   // Map instance
   let businessMap = null;
@@ -3987,82 +3965,8 @@
     }
   });
 
-  // ===== INIT: ADD SAMPLE FEED ITEMS =====
-  // Sample coordinates near Kuala Lumpur (within 2km of center: 3.1357, 101.6880)
-  
-  addFeedItem({
-    isAd: true,
-    name: 'Fresh Nasi Kuning',
-    price: '15',
-    text: 'Homemade nasi kuning available daily. Free delivery within 2km!',
-    location: '📍 Setapak',
-    boosted: true,
-    boostLabel: '1 day',
-    category: 'eatery'
-  });
-  // Store coordinates for nearby filtering (Setapak, ~1.5km from center)
-  document.querySelector('.feed-item').dataset.lat = 3.1150;
-  document.querySelector('.feed-item').dataset.lng = 101.7050;
-
-  // Add to boosted carousel
-  addBoostCarouselCard({
-    name: 'Fresh Nasi Kuning',
-    price: '15',
-    desc: 'Homemade nasi kuning available daily. Free delivery within 2km!',
-    location: '📍 Setapak',
-    boostLabel: '1 day',
-    category: 'eatery',
-    lat: 3.2010, lng: 101.7220,
-    boosted: true
-  });
-
-  addFeedItem({
-    isAd: false,
-    text: 'Just tried the new cafeteria in Bangsar. Amazing coffee! ☕'
-  });
-
-  addFeedItem({
-    isAd: true,
-    name: 'Bike Repair Service',
-    price: 'From 50',
-    text: 'Professional bike maintenance & repairs. Trusted since 2018.',
-    location: '📍 Sentosa',
-    category: 'services'
-  });
-  // Sentosa coordinates (~1.2km from center)
-  const bikeItem = document.querySelectorAll('.feed-item')[2];
-  bikeItem.dataset.lat = 3.1450;
-  bikeItem.dataset.lng = 101.6750;
-
-  // Add more sample boosted cards
-  addBoostCarouselCard({
-    name: 'Organic Coffee Roastery',
-    price: '12-18',
-    desc: 'Single-origin specialty coffee. Daily brew & beans.',
-    location: '📍 Bangsar',
-    boostLabel: '3 days',
-    category: 'eatery'
-  });
-
-  addBoostCarouselCard({
-    name: 'Laptop Repair Pro',
-    price: 'From 80',
-    desc: 'Fast & reliable repairs. Same-day service available.',
-    location: '📍 Mid Valley',
-    boostLabel: '1 week',
-    category: 'services'
-  });
-
-  addBoostCarouselCard({
-    name: 'Personal Training',
-    price: '150/hr',
-    desc: 'Fitness coaching. In-gym or online sessions.',
-    location: '📍 Pavilion',
-    boostLabel: '3 hours',
-    category: 'services'
-  });
-
-  // Feed starts in default order; "Nearby" sorts by real GPS when tapped.
+  // Feed starts empty and fills with real ads from the database.
+  // "Nearby" sorts by real GPS when tapped.
 
   // ===== SUPABASE INITIALIZATION =====
   const SUPABASE_URL = 'https://ihecgvosemcpxqweqlty.supabase.co';
@@ -4115,9 +4019,16 @@
     async insertUser(userData) {
       const response = await this.request('/users', {
         method: 'POST',
+        headers: { 'Prefer': 'return=representation' },
         body: JSON.stringify(userData)
       });
-      return response.json();
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`User save failed (${response.status}): ${errText}`);
+      }
+      // Response may be empty depending on config; parse defensively
+      const text = await response.text();
+      return text ? JSON.parse(text) : null;
     },
     
     async getUser(email) {
