@@ -41,293 +41,7 @@
     min-height: 100vh;
     transition: background 0.2s, color 0.2s;
   }
-  #app { max-width: 480px; margin: 0 auto; padding: 16px; display: none; }
-  #app.active { display: block; }
-
-  /* LANDING PAGE */
-  .landing-page {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9998;
-    padding: 20px;
-  }
-  .landing-page.hidden {
-    display: none;
-  }
-
-  .landing-header {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .landing-logo {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--accent);
-  }
-
-  .landing-lang-selector {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: var(--text);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    backdrop-filter: blur(10px);
-  }
-
-  .landing-content {
-    text-align: center;
-    max-width: 500px;
-    margin-bottom: 40px;
-  }
-
-  .landing-tagline {
-    font-size: 0.85rem;
-    letter-spacing: 0.15em;
-    color: var(--text-sub);
-    text-transform: uppercase;
-    margin-bottom: 30px;
-    font-weight: 500;
-  }
-
-  .landing-headline {
-    font-family: 'Brush Script MT', 'Lucida Handwriting', cursive, sans-serif;
-    font-size: 4rem;
-    font-weight: 400;
-    line-height: 1.1;
-    margin-bottom: 20px;
-    background: linear-gradient(135deg, #ffd400 0%, #ffed4e 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: none;
-  }
-
-  .landing-subheading {
-    font-size: 1.3rem;
-    color: var(--text);
-    font-weight: 300;
-    margin-bottom: 25px;
-    line-height: 1.6;
-  }
-
-  .landing-description {
-    font-size: 0.95rem;
-    color: var(--text-sub);
-    line-height: 1.8;
-    margin-bottom: 40px;
-  }
-
-  .landing-cta {
-    padding: 14px 40px;
-    background: linear-gradient(135deg, #ffd400 0%, #ffed4e 100%);
-    color: #111;
-    border: none;
-    border-radius: 50px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 10px 30px rgba(255, 212, 0, 0.3);
-  }
-
-  .landing-cta:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(255, 212, 0, 0.4);
-  }
-
-  .landing-cta:active {
-    transform: translateY(-1px);
-  }
-
-  .landing-footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 30px 20px;
-    text-align: center;
-    font-size: 0.8rem;
-    color: var(--text-sub);
-  }
-
-  @media (max-width: 600px) {
-    .landing-headline {
-      font-size: 2.8rem;
-    }
-    .landing-subheading {
-      font-size: 1.1rem;
-    }
-    .landing-description {
-      font-size: 0.9rem;
-    }
-  }
-
-  /* AUTH CONTAINER */
-  .auth-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-  .auth-container.hidden {
-    display: none;
-  }
-
-  .auth-screen {
-    width: 100%;
-    max-width: 480px;
-    padding: 40px 20px;
-    text-align: center;
-    display: none;
-  }
-  .auth-screen.active {
-    display: block;
-  }
-
-  /* AUTH FORMS */
-  .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .auth-form h2 {
-    font-size: 1.6rem;
-    color: var(--text);
-    margin-bottom: 20px;
-  }
-  .auth-input {
-    padding: 14px;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 1rem;
-  }
-  .auth-input::placeholder {
-    color: var(--text-sub);
-  }
-  .auth-input:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-  .auth-btn {
-    padding: 14px;
-    background: var(--accent);
-    color: var(--accent-text);
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .auth-btn:hover {
-    opacity: 0.9;
-  }
-  .auth-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .auth-link {
-    color: var(--accent);
-    cursor: pointer;
-    text-decoration: underline;
-    font-size: 0.95rem;
-  }
-  .auth-link:hover {
-    opacity: 0.8;
-  }
-  .auth-error {
-    color: #e0455c;
-    font-size: 0.9rem;
-    padding: 10px;
-    background: rgba(224, 69, 92, 0.1);
-    border-radius: 6px;
-  }
-
-  /* AUTH FORMS */
-  .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .auth-form h2 {
-    font-size: 1.6rem;
-    color: var(--text);
-    margin-bottom: 20px;
-  }
-  .auth-input {
-    padding: 14px;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 1rem;
-  }
-  .auth-input::placeholder {
-    color: var(--text-sub);
-  }
-  .auth-input:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-  .auth-btn {
-    padding: 14px;
-    background: var(--accent);
-    color: var(--accent-text);
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .auth-btn:hover {
-    opacity: 0.9;
-  }
-  .auth-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .auth-link {
-    color: var(--accent);
-    cursor: pointer;
-    text-decoration: underline;
-    font-size: 0.95rem;
-  }
-  .auth-link:hover {
-    opacity: 0.8;
-  }
-  .auth-error {
-    color: #e0455c;
-    font-size: 0.9rem;
-    padding: 10px;
-    background: rgba(224, 69, 92, 0.1);
-    border-radius: 6px;
-  }
+  #app { max-width: 480px; margin: 0 auto; padding: 16px; }
 
   /* HEADER: search + notifications */
   .header-row {
@@ -1049,11 +763,234 @@
     justify-content: center;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
+
+  /* LANDING PAGE */
+  .landing-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    padding: 20px;
+  }
+  .landing-page.hidden {
+    display: none;
+  }
+
+  .landing-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .landing-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .landing-lang-selector {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+  }
+
+  .landing-content {
+    text-align: center;
+    max-width: 500px;
+    margin-bottom: 40px;
+  }
+
+  .landing-tagline {
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    color: var(--text-sub);
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    font-weight: 500;
+  }
+
+  .landing-headline {
+    font-family: 'Brush Script MT', 'Lucida Handwriting', cursive, sans-serif;
+    font-size: 4rem;
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #ffd400 0%, #ffed4e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+  }
+
+  .landing-subheading {
+    font-size: 1.3rem;
+    color: var(--text);
+    font-weight: 300;
+    margin-bottom: 25px;
+    line-height: 1.6;
+  }
+
+  .landing-description {
+    font-size: 0.95rem;
+    color: var(--text-sub);
+    line-height: 1.8;
+    margin-bottom: 40px;
+  }
+
+  .landing-cta {
+    padding: 14px 40px;
+    background: linear-gradient(135deg, #ffd400 0%, #ffed4e 100%);
+    color: #111;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(255, 212, 0, 0.3);
+  }
+
+  .landing-cta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(255, 212, 0, 0.4);
+  }
+
+  .landing-cta:active {
+    transform: translateY(-1px);
+  }
+
+  .landing-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 30px 20px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-sub);
+  }
+
+  @media (max-width: 600px) {
+    .landing-headline {
+      font-size: 2.8rem;
+    }
+    .landing-subheading {
+      font-size: 1.1rem;
+    }
+    .landing-description {
+      font-size: 0.9rem;
+    }
+  }
+
+  /* AUTH CONTAINER */
+  .auth-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+  .auth-container.hidden {
+    display: none;
+  }
+
+  .auth-screen {
+    width: 100%;
+    max-width: 480px;
+    padding: 40px 20px;
+    text-align: center;
+    display: none;
+  }
+  .auth-screen.active {
+    display: block;
+  }
+
+  /* AUTH FORMS */
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .auth-form h2 {
+    font-size: 1.6rem;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+  .auth-input {
+    padding: 14px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1rem;
+  }
+  .auth-input::placeholder {
+    color: var(--text-sub);
+  }
+  .auth-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .auth-btn {
+    padding: 14px;
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .auth-btn:hover {
+    opacity: 0.9;
+  }
+  .auth-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .auth-link {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.95rem;
+  }
+  .auth-link:hover {
+    opacity: 0.8;
+  }
+  .auth-error {
+    color: #e0455c;
+    font-size: 0.9rem;
+    padding: 10px;
+    background: rgba(224, 69, 92, 0.1);
+    border-radius: 6px;
+  }
 </style>
 </head>
 <body>
 
-<!-- LANDING PAGE -->
 <div id="landingPage" class="landing-page">
   <div class="landing-header">
     <div class="landing-logo">🌟 Cari-Cari</div>
@@ -1072,7 +1009,7 @@
     <h1 class="landing-headline" id="landingHeadline">Cari-Cari</h1>
     <div class="landing-subheading" id="landingSubheading">Make your business known</div>
     <div class="landing-description" id="landingDescription">
-      Cari-Cari connects local businesses with their community. Share what you sell, showcase your services, and reach customers searching for exactly what you offer — all in one place.
+      Cari-Cari connects local businesses with their community. Share what you sell, showcase your services, and reach customers searching for exactly what you offer — all from your phone.
     </div>
     <button class="landing-cta" id="landingCTA" onclick="proceedToAuth()">Get Started</button>
   </div>
@@ -3481,10 +3418,7 @@
   // Apply initial distance filter
   filterFeedByDistance();
 
-  // ===== LANDING PAGE & AUTH SYSTEM =====
-  let currentUser = null;
-  
-  // Initialize Supabase
+  // ===== SUPABASE INITIALIZATION =====
   const SUPABASE_URL = 'https://ihecqvosemcpxqweqity.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloZWNxdm9zZW1jcHhxd2VxbHR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NTg0MjMsImV4cCI6MjA5OTIzNDQyM30.ck6Priblat_M2Kd_ryIyQUsxDpOXxmUSsd9ox4_XGs0';
   
@@ -3549,6 +3483,267 @@
   
   console.log('✅ Supabase client initialized');
 
+  // ===== LANDING PAGE & AUTH SYSTEM =====
+  let authLang = 'en';
+  let currentUser = null;
+
+  const authTranslations = {
+    en: {
+      landingTagline: 'A LOCAL MARKETPLACE FOR YOUR BUSINESS',
+      landingHeadline: 'Cari-Cari',
+      landingSubheading: 'Make your business known',
+      landingDescription: 'Cari-Cari connects local businesses with their community. Share what you sell, showcase your services, and reach customers searching for exactly what you offer — all from your phone.',
+      landingCTA: 'Get Started',
+      landingFooter: 'Join thousands of local sellers in Sabah & Malaysia • Completely Free',
+      signIn: 'Sign In',
+      signUp: 'Create Account',
+      email: 'Email address',
+      password: 'Password',
+      fullName: 'Full Name',
+      confirmPassword: 'Confirm Password',
+      phone: 'Phone Number',
+      signInBtn: 'Sign In',
+      signUpBtn: 'Create Account',
+      emailRequired: 'Email is required',
+      passwordRequired: 'Password is required',
+      passwordMismatch: 'Passwords do not match',
+      invalidCredentials: 'Invalid email or password'
+    },
+    ms: {
+      landingTagline: 'PASARAN TEMPATAN UNTUK BISNES ANDA',
+      landingHeadline: 'Cari-Cari',
+      landingSubheading: 'Kenalkan bisnes anda',
+      landingDescription: 'Cari-Cari menghubungkan perniagaan tempatan dengan komuniti mereka. Kongsikan apa yang anda jual, tunjukkan perkhidmatan anda, dan capai pelanggan yang mencari apa yang anda tawarkan — semuanya dari telefon anda.',
+      landingCTA: 'Mulai Sekarang',
+      landingFooter: 'Sertai ribuan penjual tempatan di Sabah & Malaysia • Sepenuhnya Percuma',
+      signIn: 'Masuk',
+      signUp: 'Buat Akaun',
+      email: 'Alamat email',
+      password: 'Kata laluan',
+      fullName: 'Nama Penuh',
+      confirmPassword: 'Sahkan Kata Laluan',
+      phone: 'Nombor Telefon',
+      signInBtn: 'Masuk',
+      signUpBtn: 'Buat Akaun',
+      emailRequired: 'Email diperlukan',
+      passwordRequired: 'Kata laluan diperlukan',
+      passwordMismatch: 'Kata laluan tidak sepadan',
+      invalidCredentials: 'Email atau kata laluan tidak sah'
+    },
+    zh: {
+      landingTagline: '您业务的本地市场',
+      landingHeadline: '寻找-寻找',
+      landingSubheading: '让你的生意众所周知',
+      landingDescription: 'Cari-Cari连接本地企业与他们的社区。分享你销售的产品，展示你的服务，并接触正在寻找你提供的东西的客户——一切都在你的手机上。',
+      landingCTA: '开始',
+      landingFooter: '加入数千名沙巴和马来西亚的本地卖家 • 完全免费',
+      signIn: '登录',
+      signUp: '创建账户',
+      email: '电子邮件地址',
+      password: '密码',
+      fullName: '全名',
+      confirmPassword: '确认密码',
+      phone: '电话号码',
+      signInBtn: '登录',
+      signUpBtn: '创建账户',
+      emailRequired: '需要电子邮件',
+      passwordRequired: '需要密码',
+      passwordMismatch: '密码不匹配',
+      invalidCredentials: '电子邮件或密码无效'
+    }
+  };
+
+  function t(key) {
+    return authTranslations[authLang][key] || authTranslations['en'][key];
+  }
+
+  function changeLandingLanguage(lang) {
+    authLang = lang;
+    updateLandingPageText();
+  }
+
+  function updateLandingPageText() {
+    if (!document.getElementById('landingTagline')) return;
+    document.getElementById('landingTagline').textContent = t('landingTagline');
+    document.getElementById('landingHeadline').textContent = t('landingHeadline');
+    document.getElementById('landingSubheading').textContent = t('landingSubheading');
+    document.getElementById('landingDescription').textContent = t('landingDescription');
+    document.getElementById('landingCTA').textContent = t('landingCTA');
+    document.getElementById('landingFooter').textContent = t('landingFooter');
+  }
+
+  function proceedToAuth() {
+    document.getElementById('landingPage').classList.add('hidden');
+    document.getElementById('authContainer').classList.remove('hidden');
+    showSignIn();
+    console.log('📱 Transitioning to auth...');
+  }
+
+  function showSignIn() {
+    document.getElementById('signUpScreen').classList.remove('active');
+    document.getElementById('signInScreen').classList.add('active');
+    document.getElementById('signInTitle').textContent = t('signIn');
+    document.getElementById('signInEmail').placeholder = t('email');
+    document.getElementById('signInPassword').placeholder = t('password');
+    document.getElementById('signInError').style.display = 'none';
+  }
+
+  function showSignUp() {
+    document.getElementById('signInScreen').classList.remove('active');
+    document.getElementById('signUpScreen').classList.add('active');
+    document.getElementById('signUpTitle').textContent = t('signUp');
+    document.getElementById('signUpName').placeholder = t('fullName');
+    document.getElementById('signUpEmail').placeholder = t('email');
+    document.getElementById('signUpPassword').placeholder = t('password');
+    document.getElementById('signUpConfirm').placeholder = t('confirmPassword');
+    document.getElementById('signUpPhone').placeholder = t('phone');
+    document.getElementById('signUpError').style.display = 'none';
+  }
+
+  function showApp() {
+    document.getElementById('landingPage').classList.add('hidden');
+    document.getElementById('authContainer').classList.add('hidden');
+    document.getElementById('app').classList.add('active');
+    console.log('🎉 App loaded for user:', currentUser.name);
+  }
+
+  function handleSignIn() {
+    const email = document.getElementById('signInEmail').value.trim();
+    const password = document.getElementById('signInPassword').value.trim();
+    const errorDiv = document.getElementById('signInError');
+
+    if (!email) {
+      errorDiv.textContent = t('emailRequired');
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    if (!password) {
+      errorDiv.textContent = t('passwordRequired');
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    const signInBtn = document.querySelector('#signInScreen .auth-btn');
+    const originalText = signInBtn.textContent;
+    signInBtn.disabled = true;
+    signInBtn.textContent = '⏳ Signing in...';
+
+    supabaseClient.auth_signin(email, password)
+      .then(async (data) => {
+        if (data.error) {
+          console.warn('⚠️ Supabase error:', data.error);
+          errorDiv.textContent = t('invalidCredentials');
+          errorDiv.style.display = 'block';
+          signInBtn.disabled = false;
+          signInBtn.textContent = originalText;
+          return;
+        }
+
+        console.log('✅ Signed in');
+        currentUser = { name: email.split('@')[0], email: email, phone: '' };
+        localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+        signInBtn.disabled = false;
+        signInBtn.textContent = originalText;
+        showApp();
+      })
+      .catch(err => {
+        console.error('❌ Error:', err);
+        errorDiv.textContent = 'Network error';
+        errorDiv.style.display = 'block';
+        signInBtn.disabled = false;
+        signInBtn.textContent = originalText;
+      });
+  }
+
+  function handleSignUp() {
+    const name = document.getElementById('signUpName').value.trim();
+    const email = document.getElementById('signUpEmail').value.trim();
+    const password = document.getElementById('signUpPassword').value.trim();
+    const confirm = document.getElementById('signUpConfirm').value.trim();
+    const phone = document.getElementById('signUpPhone').value.trim();
+    const errorDiv = document.getElementById('signUpError');
+
+    if (!email) {
+      errorDiv.textContent = t('emailRequired');
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    if (!password) {
+      errorDiv.textContent = t('passwordRequired');
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    if (password !== confirm) {
+      errorDiv.textContent = t('passwordMismatch');
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    const signUpBtn = document.querySelector('#signUpScreen .auth-btn');
+    const originalText = signUpBtn.textContent;
+    signUpBtn.disabled = true;
+    signUpBtn.textContent = '⏳ Creating...';
+
+    supabaseClient.auth_signup(email, password)
+      .then(async (data) => {
+        if (data.error) {
+          console.warn('⚠️ Signup error:', data.error);
+          errorDiv.textContent = data.error.message || 'Signup failed';
+          errorDiv.style.display = 'block';
+          signUpBtn.disabled = false;
+          signUpBtn.textContent = originalText;
+          return;
+        }
+
+        console.log('✅ Account created');
+
+        try {
+          await supabaseClient.insertUser({
+            email: email,
+            name: name,
+            phone: phone,
+            credits: 250,
+            created_at: new Date().toISOString()
+          });
+          console.log('✅ Profile saved');
+        } catch (err) {
+          console.warn('⚠️ Profile save error:', err);
+        }
+
+        currentUser = { name, email, phone };
+        localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+        console.log('✅ Signed up:', currentUser);
+        
+        signUpBtn.disabled = false;
+        signUpBtn.textContent = originalText;
+        showApp();
+      })
+      .catch(err => {
+        console.error('❌ Error:', err);
+        errorDiv.textContent = 'Network error';
+        errorDiv.style.display = 'block';
+        signUpBtn.disabled = false;
+        signUpBtn.textContent = originalText;
+      });
+  }
+
+  // Expose handlers for inline onclick/onchange in the HTML
+  window.proceedToAuth = proceedToAuth;
+  window.changeLandingLanguage = changeLandingLanguage;
+  window.showSignIn = showSignIn;
+  window.showSignUp = showSignUp;
+  window.handleSignIn = handleSignIn;
+  window.handleSignUp = handleSignUp;
+
+  // Check if already logged in
+  const savedUser = localStorage.getItem('cariCariCurrentUser');
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    showApp();
+  }
 
 </script>
 </body>
