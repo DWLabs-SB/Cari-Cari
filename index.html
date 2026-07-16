@@ -3287,9 +3287,7 @@
     for (let i = 0; i < selectedPhotos.length; i++) {
       const blob = selectedPhotos[i];
       if (!blob) continue;
-      const rand = Math.random().toString(36).slice(2, 8);
-      const path = `advertisements/${Date.now()}-${rand}-${i}.jpg`;
-      const url = await supabaseClient.uploadPhoto(STORAGE_BUCKET, path, blob);
+      const url = await uploadPhotoToR2(blob);
       urls.push(url);
     }
     return urls;
@@ -3446,8 +3444,9 @@
     const locationHtml = isAd && location ? `<div class="feed-location">${location}</div>` : '';
     let mediaHtml = '';
     if (photos && photos.length > 0) {
-      const imgs = photos.map(u => `<img src="${u}" alt="ad photo" style="width:100%; border-radius:10px; margin-bottom:6px; object-fit:cover;">`).join('');
-      mediaHtml = `<div class="feed-media-photos">${imgs}</div>`;
+      const imgs = photos.map(u => `<img src="${u}" alt="ad photo" style="width:100%; height:100%; border-radius:10px; object-fit:cover; aspect-ratio:1;">`).join('');
+      const cols = photos.length === 1 ? '1fr' : photos.length === 2 ? '1fr 1fr' : '1fr 1fr 1fr';
+      mediaHtml = `<div class="feed-media-photos" style="display:grid; grid-template-columns:${cols}; gap:6px; margin-bottom:8px;">${imgs}</div>`;
     } else if (isAd) {
       mediaHtml = `<div class="feed-media">🖼️ New ad</div>`;
     }
@@ -3797,34 +3796,30 @@
       const response = await this.request(`/users?email=eq.${email}`);
       const data = await response.json();
       return data.length > 0 ? data[0] : null;
-    },
-
-    // Upload a file (Blob) to Supabase Storage bucket, return the R2 public URL
-    async uploadPhoto(bucket, path, blob) {
-      const url = `${this.url}/storage/v1/object/${bucket}/${path}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'apikey': this.key,
-          'Authorization': `Bearer ${this.key}`,
-          'Content-Type': blob.type || 'image/jpeg',
-          'x-upsert': 'true'
-        },
-        body: blob
-      });
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Upload failed (${response.status}): ${errText}`);
-      }
-      // Serve from R2 public domain to keep viewing egress free
-      return `${R2_PUBLIC_URL}/${path}`;
     }
   };
 
-  // R2 public bucket domain — images are SERVED from here (free egress)
-  const R2_PUBLIC_URL = 'https://pub-11e3f4324d8e43319eccbdeffb488911.r2.dev';
-  const STORAGE_BUCKET = 'cari-cari-files';
-  
+  // ===== R2 MEDIA (via Cloudflare Worker) =====
+  // Photos upload to the Worker, which writes them to R2.
+  // Viewing is served from R2's public domain — zero Supabase egress.
+  const R2_WORKER_URL = 'https://cari-cari-uploads.ferraigs.workers.dev';       // deployed Worker
+  const R2_PUBLIC_URL = 'https://pub-11e3f4324d8e43319eccbdeffb488911.r2.dev'; // cari-cari bucket public URL
+
+  // Upload a compressed image Blob to R2 via the Worker; returns its public URL
+  async function uploadPhotoToR2(blob) {
+    const response = await fetch(R2_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': blob.type || 'image/jpeg' },
+      body: blob
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`R2 upload failed (${response.status}): ${errText}`);
+    }
+    const data = await response.json();
+    // Worker returns the object key; build the public R2 URL
+    return `${R2_PUBLIC_URL}/${data.key}`;
+  }
   console.log('✅ Supabase client initialized');
 
   // ===== LANDING PAGE & AUTH SYSTEM =====
