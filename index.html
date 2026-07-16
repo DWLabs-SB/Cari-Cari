@@ -1263,7 +1263,7 @@
           </div>
         </div>
       </div>
-      <input type="text" placeholder="Item or business name">
+      <input type="text" id="ad-item-name" placeholder="Item or business name">
       <input type="text" id="price-input" placeholder="Price (optional, e.g., 25 RM)">
       <textarea placeholder="Describe your item or service..."></textarea>
 
@@ -1742,7 +1742,8 @@
     const searchBoxInput = document.querySelector('.search-box input');
     if (searchBoxInput) searchBoxInput.placeholder = t.searchPlaceholder;
     document.getElementById('text-post-input').placeholder = t.postPlaceholder;
-    document.querySelector('#ad-fields input[placeholder*="Item"]').placeholder = t.sellPlaceholder;
+    const itemNameInput = document.getElementById('ad-item-name');
+    if (itemNameInput) itemNameInput.placeholder = t.sellPlaceholder;
     document.querySelector('#ad-fields textarea').placeholder = t.descPlaceholder;
     document.getElementById('location-box').textContent = t.locationPin;
     document.getElementById('price-input').placeholder = t.priceLabel;
@@ -3342,7 +3343,7 @@
       return;
     }
 
-    const itemName = document.querySelector('#ad-fields input[placeholder="Item or business name"]').value.trim();
+    const itemName = document.getElementById('ad-item-name').value.trim();
     const price = document.getElementById('price-input').value.trim();
     const desc = document.querySelector('#ad-fields textarea').value.trim();
     const locationBox = document.getElementById('location-box');
@@ -3409,7 +3410,7 @@
     }
 
     // Reset ad form + category selection
-    document.querySelector('#ad-fields input[placeholder="Item or business name"]').value = '';
+    document.getElementById('ad-item-name').value = '';
     document.getElementById('price-input').value = '';
     document.querySelector('#ad-fields textarea').value = '';
     clearSelectedPhotos();
