@@ -1165,15 +1165,15 @@
 
   <!-- NEARBY FILTER -->
   <div class="filter-row">
-    <div class="filter-pill active" data-filter="nearby">📍 Nearby (2km)</div>
-    <div class="filter-pill" data-filter="popular">⭐ Popular</div>
+    <div class="filter-pill" data-filter="nearby">📍 Nearby</div>
+    <div class="filter-pill active" data-filter="popular">⭐ Popular</div>
     <div class="filter-pill" data-filter="following">❤️ Following</div>
     <div class="filter-pill" data-filter="saved">💾 Saved</div>
   </div>
 
   <!-- DISTANCE INDICATOR (shows when nearby filter active) -->
   <div id="distance-info" class="distance-info" style="display:none;">
-    <span id="distance-text">📡 Showing businesses within 2km radius</span>
+    <span id="distance-text">📍 Showing what's closest to you first</span>
   </div>
 
   <!-- HOW IT WORKS -->
@@ -1636,8 +1636,8 @@
       sellBtn: 'Post Ad',
       buyBtn: '+ Buy credits',
       boostLabel: 'Boost this ad',
-      distanceInfo: '📡 Showing businesses within 2km radius',
-      nearbyFilter: '📍 Nearby (2km)',
+      distanceInfo: '📍 Showing what\'s closest to you first',
+      nearbyFilter: '📍 Nearby',
       distanceUnits: 'm away',
       hiwTitle: '💡 How Cari-Cari works',
       hiwStep1: 'Share ads or posts about local businesses, items, & services',
@@ -1672,8 +1672,8 @@
       sellBtn: 'Hantar Iklan',
       buyBtn: '+ Beli kredit',
       boostLabel: 'Gandakan iklan ini',
-      distanceInfo: '📡 Menunjukkan perniagaan dalam radius 2km',
-      nearbyFilter: '📍 Berdekatan (2km)',
+      distanceInfo: '📍 Menunjukkan yang terdekat dengan anda dahulu',
+      nearbyFilter: '📍 Berdekatan',
       hiwTitle: '💡 Cara Cari-Cari berfungsi',
       hiwStep1: 'Kongsi iklan atau pos tentang perniagaan, item & perkhidmatan tempatan',
       hiwStep2: 'Temui apa yang berdekatan & berhubung dengan penjual',
@@ -1707,8 +1707,8 @@
       sellBtn: '发布广告',
       buyBtn: '+ 购买积分',
       boostLabel: '推广此广告',
-      distanceInfo: '📡 显示 2 公里范围内的商家',
-      nearbyFilter: '📍 附近 (2公里)',
+      distanceInfo: '📍 优先显示离你最近的',
+      nearbyFilter: '📍 附近',
       distanceUnits: '米外',
       hiwTitle: '💡 Cari-Cari 如何运作',
       hiwStep1: '分享关于本地商家、商品和服务的广告或帖子',
@@ -1814,13 +1814,9 @@
     });
   }
 
-  // ===== DISTANCE FILTER & RADIUS =====
-  const RADIUS_KM = 2;
-  let userLocation = null; // Will store user's coordinates when they use directions
-  let activeFilter = 'nearby';
-
-  // Simulated user location (Kuala Lumpur center for demo)
-  userLocation = { lat: 3.1357, lng: 101.6880, name: 'Your location' };
+  // ===== DISTANCE FILTER & LOCATION =====
+  let userLocation = null; // Set from real GPS when the user taps "Nearby"
+  let activeFilter = 'popular';
 
   function calculateDistance(lat1, lng1, lat2, lng2) {
     const R = 6371; // Earth's radius in km
@@ -1840,46 +1836,78 @@
     return km.toFixed(1) + 'km';
   }
 
-  function filterFeedByDistance() {
-    const feedItems = document.querySelectorAll('.feed-item');
-    feedItems.forEach(item => {
-      if (activeFilter !== 'nearby') {
-        item.style.display = 'block';
-        return;
-      }
+  // Sort the feed so the closest ads appear first. No hard cutoff — everything stays visible.
+  function sortFeedByDistance() {
+    const feedContainer = document.getElementById('feed-container');
+    if (!feedContainer || !userLocation) return;
+    const items = Array.from(feedContainer.querySelectorAll('.feed-item'));
 
-      // If item has coordinates and we're in nearby filter
+    items.forEach(item => {
       const lat = item.dataset.lat;
       const lng = item.dataset.lng;
-
-      if (lat && lng && userLocation) {
-        const distance = calculateDistance(userLocation.lat, userLocation.lng, parseFloat(lat), parseFloat(lng));
-        const withinRadius = distance <= RADIUS_KM;
-
-        if (withinRadius) {
-          item.style.display = 'block';
-          // Update distance display in item if it exists
-          const distanceEl = item.querySelector('[data-distance]');
-          if (!distanceEl) {
-            const actionRow = item.querySelector('.actions-row');
-            if (actionRow) {
-              const distanceSpan = document.createElement('span');
-              distanceSpan.style.fontSize = '0.72rem';
-              distanceSpan.style.color = 'var(--text-sub)';
-              distanceSpan.textContent = `${formatDistance(distance)} away`;
-              distanceSpan.dataset.distance = 'true';
-              actionRow.appendChild(distanceSpan);
-            }
+      let distance = Infinity;
+      if (lat && lng) {
+        distance = calculateDistance(userLocation.lat, userLocation.lng, parseFloat(lat), parseFloat(lng));
+        // Show/refresh the "X away" label
+        let distEl = item.querySelector('[data-distance]');
+        if (!distEl) {
+          const actionRow = item.querySelector('.actions-row');
+          if (actionRow) {
+            distEl = document.createElement('span');
+            distEl.style.fontSize = '0.72rem';
+            distEl.style.color = 'var(--text-sub)';
+            distEl.dataset.distance = 'true';
+            actionRow.appendChild(distEl);
           }
-        } else {
-          item.style.display = 'none';
         }
-      } else {
-        // No coordinates, hide in nearby filter
-        item.style.display = 'none';
+        if (distEl) distEl.textContent = `${formatDistance(distance)} away`;
       }
+      item._distance = distance;
+      item.style.display = 'block';
     });
+
+    // Reorder: closest first; items without coordinates fall to the bottom
+    items.sort((a, b) => a._distance - b._distance);
+    items.forEach(item => feedContainer.appendChild(item));
   }
+
+  // When a non-nearby filter is active, just show everything in original order
+  function showAllFeedItems() {
+    document.querySelectorAll('.feed-item').forEach(item => { item.style.display = 'block'; });
+  }
+
+  // Request the customer's real GPS location, then sort the feed nearest-first
+  function useMyLocationAndSort() {
+    const distanceInfo = document.getElementById('distance-info');
+    const distanceText = document.getElementById('distance-text');
+
+    if (!navigator.geolocation) {
+      distanceInfo.style.display = 'block';
+      distanceText.textContent = '⚠️ Location not supported on this device';
+      return;
+    }
+
+    distanceInfo.style.display = 'block';
+    distanceText.textContent = '📡 Getting your location...';
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude, name: 'Your location' };
+        distanceText.textContent = '📍 Showing what\'s closest to you first';
+        sortFeedByDistance();
+      },
+      err => {
+        console.warn('Geolocation error:', err.message);
+        if (err.code === 1) {
+          distanceText.textContent = '⚠️ Location blocked — enable it to see what\'s nearest';
+        } else {
+          distanceText.textContent = '⚠️ Could not get your location — try again';
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }
+
 
   // Filter pill click handlers
   document.querySelectorAll('.filter-pill').forEach(pill => {
@@ -1890,17 +1918,23 @@
 
       const distanceInfo = document.getElementById('distance-info');
       if (activeFilter === 'nearby') {
-        distanceInfo.style.display = 'block';
-        filterFeedByDistance();
+        // Ask for real GPS (only on tap), then sort nearest-first
+        if (userLocation) {
+          distanceInfo.style.display = 'block';
+          document.getElementById('distance-text').textContent = '📍 Showing what\'s closest to you first';
+          sortFeedByDistance();
+        } else {
+          useMyLocationAndSort();
+        }
       } else {
         distanceInfo.style.display = 'none';
-        document.querySelectorAll('.feed-item').forEach(item => item.style.display = 'block');
+        showAllFeedItems();
       }
     });
   });
 
-  // Show distance info by default
-  document.getElementById('distance-info').style.display = 'block';
+  // Distance info hidden until the user opts into Nearby
+  document.getElementById('distance-info').style.display = 'none';
 
   // ===== SHOP DATA WITH CATEGORIES & LOCATIONS =====
   const shops = [
@@ -2025,6 +2059,9 @@
 
     // Update shop count
     document.getElementById('mapShopCount').textContent = shops.length;
+
+    // Plot any user-posted ads that were registered before the map opened
+    postedAdLocations.forEach(ad => plotAdMarker(ad));
   }
 
   // Show/Hide map
@@ -2038,6 +2075,38 @@
     document.getElementById('mapSection').style.display = 'none';
     document.getElementById('showMapBtn').style.display = 'block';
   });
+
+  // ===== USER-POSTED AD MARKERS ON THE MAP =====
+  // Ads with a pinned location are collected here and plotted on the business map.
+  const postedAdLocations = [];
+
+  function plotAdMarker(ad) {
+    if (!businessMap) return; // map not open yet; will be plotted on init
+    if (ad.lat == null || ad.lng == null) return;
+    const emoji = { eatery:'🍽️', services:'🔧', minimarket:'🏪', product:'📦' }[ad.category] || '📍';
+    const markerHtml = `
+      <div style="background:#ffd400; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; border:3px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3);">${emoji}</div>`;
+    const marker = L.marker([ad.lat, ad.lng], {
+      icon: L.divIcon({ html: markerHtml, iconSize: [40,40], className: 'custom-marker' })
+    }).addTo(businessMap);
+    const name = ad.business_name || ad.name || 'Business';
+    const priceStr = ad.price ? `<div>💰 ${ad.price} RM</div>` : '';
+    marker.bindPopup(`
+      <div style="font-family:-apple-system,sans-serif; min-width:180px;">
+        <div style="font-weight:600; font-size:14px; margin-bottom:4px;">${name}</div>
+        ${ad.description || ad.desc ? `<div style="font-size:12px; color:#666; margin-bottom:6px;">${ad.description || ad.desc}</div>` : ''}
+        ${priceStr}
+        ${ad.location_text || ad.location ? `<div style="font-size:12px; color:#666;">📍 ${ad.location_text || ad.location}</div>` : ''}
+      </div>`);
+    mapMarkers.push(marker);
+  }
+
+  // Register an ad's location; plot now if the map is open, else store for later
+  function registerAdLocation(ad) {
+    if (ad.lat == null || ad.lng == null) return;
+    postedAdLocations.push(ad);
+    plotAdMarker(ad);
+  }
 
   // ===== CATEGORY FILTER FUNCTIONALITY =====
   function filterShops() {
@@ -3359,6 +3428,9 @@
       });
     });
 
+    // Plot every located ad on the dashboard map
+    ads.forEach(ad => registerAdLocation(ad));
+
     console.log(`✅ Loaded ${ads.length} ads from database`);
   }
 
@@ -3585,6 +3657,19 @@
     }).catch(err => {
       console.warn('⚠️ Ad DB save failed:', err.message);
     });
+
+    // Drop a pin on the dashboard map for this ad (if it has a location)
+    if (hasLocation && selectedCoords) {
+      registerAdLocation({
+        business_name: itemName || 'Your business',
+        desc: desc,
+        price: price,
+        category: selectedCategory,
+        location_text: locationText,
+        lat: selectedCoords.lat,
+        lng: selectedCoords.lng
+      });
+    }
 
     // Reset ad form + category selection
     document.getElementById('ad-item-name').value = '';
@@ -3914,8 +3999,7 @@
     category: 'services'
   });
 
-  // Apply initial distance filter
-  filterFeedByDistance();
+  // Feed starts in default order; "Nearby" sorts by real GPS when tapped.
 
   // ===== SUPABASE INITIALIZATION =====
   const SUPABASE_URL = 'https://ihecgvosemcpxqweqlty.supabase.co';
