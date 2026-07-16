@@ -1079,6 +1079,67 @@
     </div>
   </div>
 
+  <!-- TERMS & PDPA AGREE SCREEN -->
+  <div id="termsScreen" class="auth-screen">
+    <div class="auth-form" style="max-width:520px;">
+      <h2 style="margin-bottom:4px;">Terms & Privacy</h2>
+      <p style="color:var(--text-sub); font-size:0.85rem; margin-bottom:12px;">Please read and agree before creating your account.</p>
+
+      <div style="max-height:46vh; overflow-y:auto; background:var(--input-bg); border:1px solid var(--input-border); border-radius:10px; padding:14px; font-size:0.8rem; line-height:1.55; color:var(--text);">
+        <h3 style="font-size:0.95rem; margin-bottom:6px;">Terms & Conditions</h3>
+        <p style="margin-bottom:8px;"><b>Last updated: 2026.</b> Cari-Cari ("the App") is operated by Desmond Watson ("we", "us", "the Operator"). By creating an account or using the App, you agree to these Terms.</p>
+
+        <p style="margin-bottom:8px;"><b>1. The service.</b> Cari-Cari is a community marketplace that lets users post advertisements and messages about local businesses, goods, and services, and discover others nearby. We provide the platform only; we are not a party to any transaction between users.</p>
+
+        <p style="margin-bottom:8px;"><b>2. Your account.</b> You must give accurate information and keep your password safe. You are responsible for all activity under your account. You must be at least 18 years old, or have a parent or guardian's consent, to use the App.</p>
+
+        <p style="margin-bottom:8px;"><b>3. Your content.</b> You are solely responsible for the ads, photos, comments, and other content you post. You must own or have the right to post it. You must not post anything unlawful, false, misleading, offensive, infringing, or harmful. We may remove any content and suspend any account at our discretion, without notice.</p>
+
+        <p style="margin-bottom:8px;"><b>4. Transactions between users.</b> Any deal, payment, meeting, or exchange you make with another user is entirely between you and them. We do not verify users, businesses, goods, prices, or quality, and we are not responsible for any loss, dispute, injury, or fraud arising from user dealings. Meet and transact at your own risk.</p>
+
+        <p style="margin-bottom:8px;"><b>5. Credits & boosting.</b> The App uses credits to post and boost ads. Credits have no cash value, are non-refundable, and non-transferable except as we allow. We may change credit prices or rules at any time.</p>
+
+        <p style="margin-bottom:8px;"><b>6. Third-party links.</b> The App may show links to third parties (e.g. Grab, Lazada, Shopee, Touch 'n Go) and may earn affiliate commission. We do not control those services and are not responsible for them. Your use of them is subject to their own terms.</p>
+
+        <p style="margin-bottom:8px;"><b>7. Availability.</b> The App is provided "as is" and "as available". We do not guarantee it will be uninterrupted, error-free, or secure. We may change, suspend, or discontinue any part of it at any time.</p>
+
+        <p style="margin-bottom:8px;"><b>8. Limitation of liability.</b> To the fullest extent allowed by Malaysian law, the Operator is not liable for any indirect, incidental, or consequential loss, loss of data, loss of profit, or any damage arising from your use of the App or dealings with other users. Where liability cannot be excluded, it is limited to the amount you paid us (if any) in the past 6 months.</p>
+
+        <p style="margin-bottom:8px;"><b>9. Indemnity.</b> You agree to indemnify and hold the Operator harmless from any claim, loss, or cost arising from your content, your use of the App, or your breach of these Terms.</p>
+
+        <p style="margin-bottom:8px;"><b>10. Changes & governing law.</b> We may update these Terms; continued use means you accept the changes. These Terms are governed by the laws of Malaysia, and disputes are subject to the courts of Malaysia (Sabah).</p>
+
+        <p style="margin-bottom:14px;"><b>11. Contact.</b> Questions: <b>deswatson.semarak@gmail.com</b></p>
+
+        <h3 style="font-size:0.95rem; margin-bottom:6px;">Privacy Notice (PDPA 2010)</h3>
+        <p style="margin-bottom:8px;">This notice explains how we handle your personal data under the Malaysian Personal Data Protection Act 2010 (PDPA).</p>
+
+        <p style="margin-bottom:8px;"><b>a. What we collect.</b> Your name, phone number, and (optionally) email; your password in secured (hashed) form; your security question answer (hashed); the ads, photos, comments and location you choose to provide; and, if you allow it, your device's approximate GPS location to show nearby listings.</p>
+
+        <p style="margin-bottom:8px;"><b>b. Why we use it.</b> To create and run your account, display your ads and posts, show you nearby listings, enable contact between users, operate the credits system, and keep the App safe.</p>
+
+        <p style="margin-bottom:8px;"><b>c. Who we share it with.</b> Your ad content, business name, and (if you provide it) contact number are shown publicly to other users so they can reach you — do not include private information you don't want shown. We use trusted service providers to run the App: Supabase (database and accounts) and Cloudflare (photo storage). We do not sell your personal data.</p>
+
+        <p style="margin-bottom:8px;"><b>d. Storage & security.</b> Data is stored with the providers above, which may process it outside Malaysia. We take reasonable steps to protect it, but no online service is completely secure.</p>
+
+        <p style="margin-bottom:8px;"><b>e. Your rights.</b> Under the PDPA you may request access to, or correction of, your personal data, and may withdraw consent or ask us to delete your account. Some processing is necessary to provide the service; withdrawing consent may mean you can no longer use the App.</p>
+
+        <p style="margin-bottom:8px;"><b>f. Retention.</b> We keep your data while your account is active and for a reasonable period afterwards, unless a longer period is required by law.</p>
+
+        <p style="margin-bottom:0;"><b>g. Contact / requests.</b> To exercise your rights or ask questions about your data, contact <b>deswatson.semarak@gmail.com</b>. This notice is provided in English; a translation may be made available.</p>
+      </div>
+
+      <label style="display:flex; align-items:flex-start; gap:10px; margin-top:14px; cursor:pointer;">
+        <input type="checkbox" id="agreeTerms" style="margin-top:3px; width:18px; height:18px; flex-shrink:0;">
+        <span style="font-size:0.85rem; color:var(--text);">I have read and agree to the <b>Terms & Conditions</b> and the <b>Privacy Notice (PDPA)</b>.</span>
+      </label>
+
+      <div id="termsError" class="auth-error" style="display:none;"></div>
+      <button class="auth-btn" onclick="acceptTermsAndContinue()">Agree & Continue</button>
+      <span class="auth-link" onclick="showSignIn()">Cancel</span>
+    </div>
+  </div>
+
   <!-- SIGN UP SCREEN -->
   <div id="signUpScreen" class="auth-screen">
     <div class="auth-form">
@@ -4462,8 +4523,41 @@
     document.getElementById('signInError').style.display = 'none';
   }
 
+  let termsAgreed = false;
+
   function showSignUp() {
+    // Gate: show Terms & PDPA first, unless already agreed this session
+    if (!termsAgreed) {
+      document.getElementById('signInScreen').classList.remove('active');
+      const rs = document.getElementById('resetScreen');
+      if (rs) rs.classList.remove('active');
+      document.getElementById('signUpScreen').classList.remove('active');
+      document.getElementById('termsScreen').classList.add('active');
+      document.getElementById('termsError').style.display = 'none';
+      const chk = document.getElementById('agreeTerms');
+      if (chk) chk.checked = false;
+      return;
+    }
+    showSignUpForm();
+  }
+
+  function acceptTermsAndContinue() {
+    const chk = document.getElementById('agreeTerms');
+    const err = document.getElementById('termsError');
+    if (!chk.checked) {
+      err.textContent = 'Please tick the box to agree before continuing';
+      err.style.display = 'block';
+      return;
+    }
+    termsAgreed = true;
+    localStorage.setItem('cariCariTermsAgreed', new Date().toISOString());
+    document.getElementById('termsScreen').classList.remove('active');
+    showSignUpForm();
+  }
+
+  function showSignUpForm() {
     document.getElementById('signInScreen').classList.remove('active');
+    document.getElementById('termsScreen').classList.remove('active');
     const rs = document.getElementById('resetScreen');
     if (rs) rs.classList.remove('active');
     document.getElementById('signUpScreen').classList.add('active');
@@ -4901,6 +4995,7 @@
   window.changeLandingLanguage = changeLandingLanguage;
   window.showSignIn = showSignIn;
   window.showSignUp = showSignUp;
+  window.acceptTermsAndContinue = acceptTermsAndContinue;
   window.handleSignIn = handleSignIn;
   window.handleSignUp = handleSignUp;
   window.showReset = showReset;
