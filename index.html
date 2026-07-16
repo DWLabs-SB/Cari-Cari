@@ -1080,7 +1080,7 @@
   <div id="signInScreen" class="auth-screen active">
     <div class="auth-form">
       <h2 id="signInTitle">Sign In</h2>
-      <input type="email" id="signInEmail" class="auth-input" placeholder="Email address">
+      <input type="text" id="signInEmail" class="auth-input" placeholder="Email or phone number">
       <input type="password" id="signInPassword" class="auth-input" placeholder="Password">
       <div id="signInError" class="auth-error" style="display:none;"></div>
       <button class="auth-btn" onclick="handleSignIn()">Sign In</button>
@@ -1093,10 +1093,11 @@
     <div class="auth-form">
       <h2 id="signUpTitle">Create Account</h2>
       <input type="text" id="signUpName" class="auth-input" placeholder="Full Name">
-      <input type="email" id="signUpEmail" class="auth-input" placeholder="Email address">
+      <input type="tel" id="signUpPhone" class="auth-input" placeholder="Phone Number">
+      <input type="email" id="signUpEmail" class="auth-input" placeholder="Email (optional)">
       <input type="password" id="signUpPassword" class="auth-input" placeholder="Password">
       <input type="password" id="signUpConfirm" class="auth-input" placeholder="Confirm Password">
-      <input type="tel" id="signUpPhone" class="auth-input" placeholder="Phone Number">
+      <div id="signUpHint" style="font-size:0.8rem; color:var(--text-sub); margin-top:-4px;">Enter a phone number or email — phone is fine if you don't have email.</div>
       <div id="signUpError" class="auth-error" style="display:none;"></div>
       <button class="auth-btn" onclick="handleSignUp()">Create Account</button>
       <span id="signUpToggle" class="auth-link">Already have an account? <span onclick="showSignIn()">Sign In</span></span>
@@ -1607,6 +1608,9 @@
 <button class="theme-toggle">🌙</button>
 
 <script>
+  // Declared early because addFeedItem (used for sample ads at startup) references it
+  let currentUser = null;
+
   // ===== THEME TOGGLE =====
   const themeToggle = document.querySelector('.theme-toggle');
   themeToggle.addEventListener('click', () => {
@@ -3435,7 +3439,9 @@
         thumbsUp: ad.thumbs_up || 0,
         thumbsDown: ad.thumbs_down || 0,
         lat: ad.lat != null ? ad.lat : null,
-        lng: ad.lng != null ? ad.lng : null
+        lng: ad.lng != null ? ad.lng : null,
+        sellerEmail: ad.seller_email || null,
+        sellerPhone: ad.seller_phone || null
       });
     });
 
@@ -3643,7 +3649,9 @@
       boosted: boostCost > 0,
       boostLabel: composerBoostLabel,
       category: selectedCategory,
-      photos: photoUrls
+      photos: photoUrls,
+      sellerEmail: currentUser ? (currentUser.email || null) : null,
+      sellerPhone: currentUser ? (currentUser.phone || null) : null
     });
     // The just-posted item is at the top of the feed
     const justPostedItem = document.getElementById('feed-container').firstElementChild;
@@ -3723,7 +3731,7 @@
     }, 500);
   });
 
-  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category, photos, adId, thumbsUp, thumbsDown, lat, lng }) {
+  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category, photos, adId, thumbsUp, thumbsDown, lat, lng, sellerEmail, sellerPhone }) {
     const feedContainer = document.getElementById('feed-container');
     const item = document.createElement('div');
     item.className = 'feed-item just-posted' + (boosted ? ' is-boosted' : '');
@@ -3765,6 +3773,18 @@
     const tUp = thumbsUp || 0;
     const tDown = thumbsDown || 0;
 
+    // Show a delete button only to the ad's owner.
+    // Match on whichever identifier the user has: email OR phone (villagers may have no email).
+    let isOwner = false;
+    if (isAd && currentUser) {
+      const emailMatch = sellerEmail && currentUser.email && sellerEmail === currentUser.email;
+      const phoneMatch = sellerPhone && currentUser.phone && sellerPhone === currentUser.phone;
+      isOwner = !!(emailMatch || phoneMatch);
+    }
+    const deleteBtnHtml = isOwner
+      ? `<button class="ad-delete-btn" title="Delete this ad" style="margin-left:auto; background:transparent; border:none; color:#e0455c; cursor:pointer; font-size:1rem;">🗑️</button>`
+      : '';
+
     item.innerHTML = `
       <div class="feed-header">
         <div class="avatar">DS</div>
@@ -3773,6 +3793,7 @@
           <div class="feed-meta">Just now</div>
         </div>
         ${badgeHtml}
+        ${deleteBtnHtml}
       </div>
       ${mediaHtml}
       ${priceHtml}
@@ -3801,6 +3822,13 @@
     const commentsSection = item.querySelector('.comments-section');
     const commentToggle = item.querySelector('.comment-toggle');
     let commentsLoaded = false;
+
+    // Show the saved comment count as soon as the ad loads
+    if (adId) {
+      supabaseClient.countComments(adId).then(n => {
+        if (n > 0) commentToggle.textContent = `💬 Comment · ${n}`;
+      }).catch(() => {});
+    }
 
     commentToggle.addEventListener('click', async function() {
       commentsSection.classList.toggle('open');
@@ -3888,6 +3916,33 @@
       downCountEl.textContent = down;   // instant
       saveThumbs();                     // background
     });
+
+    // Delete button (owner only)
+    const deleteBtn = item.querySelector('.ad-delete-btn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async () => {
+        if (!item.dataset.adId) {
+          showToast('Please wait — ad is still saving');
+          return;
+        }
+        if (!confirm('Delete this ad? This cannot be undone.')) return;
+        deleteBtn.disabled = true;
+        try {
+          const ok = await supabaseClient.deleteAd(item.dataset.adId);
+          if (ok) {
+            item.remove();
+            showToast('Ad deleted');
+          } else {
+            showToast('Could not delete — try again');
+            deleteBtn.disabled = false;
+          }
+        } catch (err) {
+          console.warn('Delete failed:', err.message);
+          showToast('Could not delete — try again');
+          deleteBtn.disabled = false;
+        }
+      });
+    }
   }
 
   // ===== BOOST MODAL TIERS =====
@@ -4120,12 +4175,43 @@
       return response.json();
     },
 
+    // Count comments for an ad (uses exact count header)
+    async countComments(adId) {
+      const response = await this.request(`/ad_comments?ad_id=eq.${adId}&select=id`, {
+        headers: { 'Prefer': 'count=exact' }
+      });
+      if (!response.ok) return 0;
+      const range = response.headers.get('content-range'); // e.g. "0-4/5"
+      if (range && range.includes('/')) {
+        const total = parseInt(range.split('/')[1]);
+        if (!isNaN(total)) return total;
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data.length : 0;
+    },
+
     // Delete a user account row (by email)
     async deleteUser(email) {
       const response = await this.request(`/users?email=eq.${email}`, {
         method: 'DELETE'
       });
       return response.ok;
+    },
+
+    // Delete an advertisement by id
+    async deleteAd(adId) {
+      const response = await this.request(`/advertisements?id=eq.${adId}`, {
+        method: 'DELETE'
+      });
+      return response.ok;
+    },
+
+    // Look up a user by phone (for phone-only login)
+    async getUserByPhone(phone) {
+      const response = await this.request(`/users?phone=eq.${encodeURIComponent(phone)}`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.length > 0 ? data[0] : null;
     }
   };
 
@@ -4134,6 +4220,20 @@
   // Viewing is served from R2's public domain — zero Supabase egress.
   const R2_WORKER_URL = 'https://cari-cari-uploads.ferraigs.workers.dev';       // deployed Worker
   const R2_PUBLIC_URL = 'https://pub-11e3f4324d8e43319eccbdeffb488911.r2.dev'; // cari-cari bucket public URL
+
+  // ===== PHONE AUTH HELPERS =====
+  // Hash a password with SHA-256 (browser-native). Note: this is basic protection,
+  // suitable for a low-stakes marketplace; it is not bank-grade security.
+  async function hashPassword(password) {
+    const data = new TextEncoder().encode(password + 'caricari_salt_v1');
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Decide if an entered identifier is an email or a phone number
+  function looksLikeEmail(str) {
+    return /@/.test(str);
+  }
 
   // Upload a compressed image Blob to R2 via the Worker; returns its public URL
   async function uploadPhotoToR2(blob) {
@@ -4154,7 +4254,6 @@
 
   // ===== LANDING PAGE & AUTH SYSTEM =====
   let authLang = 'en';
-  let currentUser = null;
 
   const authTranslations = {
     en: {
@@ -4167,6 +4266,7 @@
       signIn: 'Sign In',
       signUp: 'Create Account',
       email: 'Email address',
+      emailOrPhone: 'Email or phone number',
       password: 'Password',
       fullName: 'Full Name',
       confirmPassword: 'Confirm Password',
@@ -4188,6 +4288,7 @@
       signIn: 'Masuk',
       signUp: 'Buat Akaun',
       email: 'Alamat email',
+      emailOrPhone: 'Email atau nombor telefon',
       password: 'Kata laluan',
       fullName: 'Nama Penuh',
       confirmPassword: 'Sahkan Kata Laluan',
@@ -4209,6 +4310,7 @@
       signIn: '登录',
       signUp: '创建账户',
       email: '电子邮件地址',
+      emailOrPhone: '电子邮件或电话号码',
       password: '密码',
       fullName: '全名',
       confirmPassword: '确认密码',
@@ -4252,7 +4354,7 @@
     document.getElementById('signUpScreen').classList.remove('active');
     document.getElementById('signInScreen').classList.add('active');
     document.getElementById('signInTitle').textContent = t('signIn');
-    document.getElementById('signInEmail').placeholder = t('email');
+    document.getElementById('signInEmail').placeholder = t('emailOrPhone');
     document.getElementById('signInPassword').placeholder = t('password');
     document.getElementById('signInError').style.display = 'none';
   }
@@ -4320,17 +4422,16 @@
     if (e.target.id === 'profile-modal-overlay') closeProfile();
   });
 
-  function handleSignIn() {
-    const email = document.getElementById('signInEmail').value.trim();
+  async function handleSignIn() {
+    const identifier = document.getElementById('signInEmail').value.trim();
     const password = document.getElementById('signInPassword').value.trim();
     const errorDiv = document.getElementById('signInError');
 
-    if (!email) {
-      errorDiv.textContent = t('emailRequired');
+    if (!identifier) {
+      errorDiv.textContent = 'Enter your email or phone number';
       errorDiv.style.display = 'block';
       return;
     }
-
     if (!password) {
       errorDiv.textContent = t('passwordRequired');
       errorDiv.style.display = 'block';
@@ -4342,34 +4443,71 @@
     signInBtn.disabled = true;
     signInBtn.textContent = '⏳ Signing in...';
 
-    supabaseClient.auth_signin(email, password)
-      .then(async (data) => {
-        if (data.error) {
-          console.warn('⚠️ Supabase error:', data.error);
-          errorDiv.textContent = t('invalidCredentials');
+    // PATH 1: looks like an email → Supabase Auth
+    if (looksLikeEmail(identifier)) {
+      supabaseClient.auth_signin(identifier, password)
+        .then(async (data) => {
+          if (data.error) {
+            errorDiv.textContent = t('invalidCredentials');
+            errorDiv.style.display = 'block';
+            signInBtn.disabled = false;
+            signInBtn.textContent = originalText;
+            return;
+          }
+          // Load real profile
+          let profile = null;
+          try { profile = await supabaseClient.getUser(identifier); } catch (e) {}
+          currentUser = profile
+            ? { name: profile.name, email: profile.email, phone: profile.phone, credits: profile.credits }
+            : { name: identifier.split('@')[0], email: identifier, phone: '' };
+          localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+          signInBtn.disabled = false;
+          signInBtn.textContent = originalText;
+          showApp();
+        })
+        .catch(err => {
+          console.error('❌ Error:', err);
+          errorDiv.textContent = 'Network error';
           errorDiv.style.display = 'block';
           signInBtn.disabled = false;
           signInBtn.textContent = originalText;
-          return;
-        }
+        });
+      return;
+    }
 
-        console.log('✅ Signed in');
-        currentUser = { name: email.split('@')[0], email: email, phone: '' };
-        localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
-        signInBtn.disabled = false;
-        signInBtn.textContent = originalText;
-        showApp();
-      })
-      .catch(err => {
-        console.error('❌ Error:', err);
-        errorDiv.textContent = 'Network error';
+    // PATH 2: phone number → check users table with hashed password
+    try {
+      const profile = await supabaseClient.getUserByPhone(identifier);
+      if (!profile || !profile.password_hash) {
+        errorDiv.textContent = t('invalidCredentials');
         errorDiv.style.display = 'block';
         signInBtn.disabled = false;
         signInBtn.textContent = originalText;
-      });
+        return;
+      }
+      const enteredHash = await hashPassword(password);
+      if (enteredHash !== profile.password_hash) {
+        errorDiv.textContent = t('invalidCredentials');
+        errorDiv.style.display = 'block';
+        signInBtn.disabled = false;
+        signInBtn.textContent = originalText;
+        return;
+      }
+      currentUser = { name: profile.name, email: profile.email, phone: profile.phone, credits: profile.credits };
+      localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+      signInBtn.disabled = false;
+      signInBtn.textContent = originalText;
+      showApp();
+    } catch (err) {
+      console.error('❌ Phone signin error:', err);
+      errorDiv.textContent = 'Network error';
+      errorDiv.style.display = 'block';
+      signInBtn.disabled = false;
+      signInBtn.textContent = originalText;
+    }
   }
 
-  function handleSignUp() {
+  async function handleSignUp() {
     const name = document.getElementById('signUpName').value.trim();
     const email = document.getElementById('signUpEmail').value.trim();
     const password = document.getElementById('signUpPassword').value.trim();
@@ -4377,18 +4515,17 @@
     const phone = document.getElementById('signUpPhone').value.trim();
     const errorDiv = document.getElementById('signUpError');
 
-    if (!email) {
-      errorDiv.textContent = t('emailRequired');
+    // Must have at least one identifier
+    if (!email && !phone) {
+      errorDiv.textContent = 'Enter a phone number or email';
       errorDiv.style.display = 'block';
       return;
     }
-
     if (!password) {
       errorDiv.textContent = t('passwordRequired');
       errorDiv.style.display = 'block';
       return;
     }
-
     if (password !== confirm) {
       errorDiv.textContent = t('passwordMismatch');
       errorDiv.style.display = 'block';
@@ -4400,48 +4537,68 @@
     signUpBtn.disabled = true;
     signUpBtn.textContent = '⏳ Creating...';
 
-    supabaseClient.auth_signup(email, password)
-      .then(async (data) => {
-        if (data.error) {
-          console.warn('⚠️ Signup error:', data.error);
-          errorDiv.textContent = data.error.message || 'Signup failed';
+    // PATH 1: Email provided → use Supabase Auth
+    if (email) {
+      supabaseClient.auth_signup(email, password)
+        .then(async (data) => {
+          if (data.error) {
+            console.warn('⚠️ Signup error:', data.error);
+            errorDiv.textContent = data.error.message || 'Signup failed';
+            errorDiv.style.display = 'block';
+            signUpBtn.disabled = false;
+            signUpBtn.textContent = originalText;
+            return;
+          }
+          console.log('✅ Account created (email)');
+          currentUser = { name, email, phone, credits: 250 };
+          localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+          signUpBtn.disabled = false;
+          signUpBtn.textContent = originalText;
+          showApp();
+          // Save profile row in background
+          supabaseClient.insertUser({
+            email, name, phone, credits: 250, created_at: new Date().toISOString()
+          }).catch(err => console.warn('⚠️ Profile save error:', err));
+        })
+        .catch(err => {
+          console.error('❌ Error:', err);
+          errorDiv.textContent = 'Network error';
           errorDiv.style.display = 'block';
           signUpBtn.disabled = false;
           signUpBtn.textContent = originalText;
-          return;
-        }
-
-        console.log('✅ Account created');
-
-        // Enter the app right away — don't make the user wait on the profile write
-        currentUser = { name, email, phone, credits: 250 };
-        localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
-        console.log('✅ Signed up:', currentUser);
-
-        signUpBtn.disabled = false;
-        signUpBtn.textContent = originalText;
-        showApp();
-
-        // Save profile to the database in the background
-        supabaseClient.insertUser({
-          email: email,
-          name: name,
-          phone: phone,
-          credits: 250,
-          created_at: new Date().toISOString()
-        }).then(() => {
-          console.log('✅ Profile saved');
-        }).catch(err => {
-          console.warn('⚠️ Profile save error:', err);
         });
-      })
-      .catch(err => {
-        console.error('❌ Error:', err);
-        errorDiv.textContent = 'Network error';
+      return;
+    }
+
+    // PATH 2: Phone only → store in users table with hashed password
+    try {
+      // Check phone isn't already registered
+      const existing = await supabaseClient.getUserByPhone(phone);
+      if (existing) {
+        errorDiv.textContent = 'That phone number is already registered';
         errorDiv.style.display = 'block';
         signUpBtn.disabled = false;
         signUpBtn.textContent = originalText;
+        return;
+      }
+      const password_hash = await hashPassword(password);
+      await supabaseClient.insertUser({
+        name, phone, email: null, password_hash, credits: 250,
+        created_at: new Date().toISOString()
       });
+      console.log('✅ Account created (phone)');
+      currentUser = { name, email: null, phone, credits: 250 };
+      localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+      signUpBtn.disabled = false;
+      signUpBtn.textContent = originalText;
+      showApp();
+    } catch (err) {
+      console.error('❌ Phone signup error:', err);
+      errorDiv.textContent = 'Could not create account — try again';
+      errorDiv.style.display = 'block';
+      signUpBtn.disabled = false;
+      signUpBtn.textContent = originalText;
+    }
   }
 
   // Expose handlers for inline onclick/onchange in the HTML
