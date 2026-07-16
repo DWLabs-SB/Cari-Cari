@@ -73,14 +73,14 @@
 
   /* CATEGORY DROPDOWN */
   #categoryFilter {
-    padding: 8px 10px;
+    padding: 10px 12px;
     background: var(--input-bg);
     border: 1px solid var(--input-border);
     border-radius: 8px;
     color: var(--text);
     font-size: 14px;
     cursor: pointer;
-    flex-shrink: 0;
+    flex: 1;
     transition: all 0.2s;
   }
 
@@ -315,7 +315,7 @@
   }
   .location-box:hover { opacity: 0.8; }
 
-  #map-modal, #boost-modal-overlay {
+  #map-modal, #boost-modal-overlay, #profile-modal-overlay {
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -323,7 +323,7 @@
     z-index: 1000;
     align-items: flex-end;
   }
-  #map-modal.open, #boost-modal-overlay.open {
+  #map-modal.open, #boost-modal-overlay.open, #profile-modal-overlay.open {
     display: flex;
   }
   .modal-content {
@@ -336,6 +336,60 @@
   }
   #map-container { width: 100%; height: 500px; border-radius: 12px; margin-bottom: 16px; }
 
+  .photo-upload-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .photo-slot {
+    flex: 1;
+    aspect-ratio: 1;
+    border: 2px dashed var(--input-border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: var(--input-bg);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .photo-slot:hover { border-color: var(--accent); }
+  .photo-slot .photo-plus {
+    font-size: 1.6rem;
+    color: var(--text-sub);
+  }
+  .photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .photo-slot .photo-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .photo-upload-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-sub);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
   .post-cost-note {
     font-size: 0.75rem;
     color: var(--text-sub);
@@ -1055,16 +1109,12 @@
 
   <!-- HEADER: Search + Integrations + Earnings + Parking + Language -->
   <div class="header-row">
-    <div class="search-box">
-      <span>🔍</span>
-      <input type="text" placeholder="Search businesses, items..." id="searchInput">
-    </div>
-    <select id="categoryFilter" style="padding: 8px 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text); font-size: 14px; cursor: pointer; flex-shrink: 0;">
-      <option value="">All</option>
-      <option value="eatery">🍽️ Eatery</option>
-      <option value="services">🔧 Services</option>
-      <option value="product">📦 Product</option>
-      <option value="minimarket">🏪 Minimarket</option>
+    <select id="categoryFilter" style="flex: 1; padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text); font-size: 14px; cursor: pointer;">
+      <option value="" id="catOptAll">🔍 All — search a category</option>
+      <option value="eatery" id="catOptEatery">🍽️ Eatery</option>
+      <option value="services" id="catOptServices">🔧 Services</option>
+      <option value="product" id="catOptProduct">📦 Product</option>
+      <option value="minimarket" id="catOptMinimarket">🏪 Minimarket (Kedai Runcit)</option>
     </select>
     <div class="icon-btn" id="integrations-btn" title="Revenue Integrations">
       💼
@@ -1077,6 +1127,9 @@
     </div>
     <div class="icon-btn" id="language-toggle" title="Toggle language">
       <span id="lang-display">ENG</span>
+    </div>
+    <div class="icon-btn" id="profile-btn" title="My Profile">
+      👤
     </div>
     <div class="icon-btn">
       🔔
@@ -1126,21 +1179,33 @@
   <!-- HOW IT WORKS -->
   <div class="how-it-works">
     <div class="hiw-header">
-      <h2>💡 How Cari-Cari works</h2>
+      <h2 id="hiw-title">💡 How Cari-Cari works</h2>
       <span class="hiw-chevron">▼</span>
     </div>
     <div class="hiw-body">
       <div class="hiw-row">
         <div class="hiw-dot"></div>
-        <div>Share ads or posts about local businesses, items, & services</div>
+        <div id="hiw-step1">Share ads or posts about local businesses, items, & services</div>
       </div>
       <div class="hiw-row">
         <div class="hiw-dot"></div>
-        <div>Discover what's nearby & connect with sellers</div>
+        <div id="hiw-step5">Upload a photo of your stall</div>
       </div>
       <div class="hiw-row">
         <div class="hiw-dot"></div>
-        <div>Boost your posts to reach more people in your area</div>
+        <div id="hiw-step6">Pin your location</div>
+      </div>
+      <div class="hiw-row">
+        <div class="hiw-dot"></div>
+        <div id="hiw-step3">Boost your posts to reach more people in your area</div>
+      </div>
+      <div class="hiw-row">
+        <div class="hiw-dot"></div>
+        <div id="hiw-step4">Posting <strong>Ads</strong> costs <strong>Credits</strong>, and boosting them to reach more people costs extra <strong>Credits</strong></div>
+      </div>
+      <div class="hiw-row">
+        <div class="hiw-dot"></div>
+        <div id="hiw-step7">Posting ads: <strong>5 Credits</strong> · Boosting: 3hr <strong>10</strong>, 1 day <strong>20</strong>, 3 days <strong>40</strong>, 1 week <strong>70</strong></div>
       </div>
     </div>
   </div>
@@ -1166,8 +1231,8 @@
   <button id="showMapBtn" style="width: 100%; padding: 12px; background: var(--accent); color: var(--accent-text); border: none; border-radius: 8px; margin-bottom: 14px; cursor: pointer; font-weight: 600; font-size: 1rem;">🗺️ Show Map</button>
   <div class="composer">
     <div class="tabs">
-      <div class="tab post-tab active">📝 Post</div>
-      <div class="tab ad-tab">🏪 Sell</div>
+      <div class="tab post-tab active" id="postTabLabel">📝 Post</div>
+      <div class="tab ad-tab" id="adTabLabel">🏪 My Ads</div>
     </div>
 
     <div id="post-fields" style="display:block;">
@@ -1201,6 +1266,15 @@
       <input type="text" placeholder="Item or business name">
       <input type="text" id="price-input" placeholder="Price (optional, e.g., 25 RM)">
       <textarea placeholder="Describe your item or service..."></textarea>
+
+      <label class="photo-upload-label" id="photo-upload-label">Add photos of your shop or product (up to 3)</label>
+      <div class="photo-upload-row" id="photo-upload-row">
+        <div class="photo-slot" data-slot="0"><span class="photo-plus">+</span></div>
+        <div class="photo-slot" data-slot="1"><span class="photo-plus">+</span></div>
+        <div class="photo-slot" data-slot="2"><span class="photo-plus">+</span></div>
+      </div>
+      <input type="file" id="photo-file-input" accept="image/*" style="display:none;">
+
       <div id="location-box" class="location-box">📍 Pin your location (optional)</div>
 
       <div class="composer-boost-toggle" id="composer-boost-toggle">
@@ -1227,7 +1301,7 @@
       </div>
 
       <div id="sales-warning" class="sales-warning">
-        ⚠️ Your ad text contains sales language. Switch to "Sell" tab to ensure proper classification. <a id="sales-warning-switch" style="cursor:pointer; text-decoration:underline;">Switch</a>
+        ⚠️ Your ad text contains sales language. Switch to "My Ads" tab to ensure proper classification. <a id="sales-warning-switch" style="cursor:pointer; text-decoration:underline;">Switch</a>
       </div>
       <div class="post-cost-note">This will use 5 credits</div>
       <button class="post-btn">Post Ad</button>
@@ -1503,6 +1577,32 @@
 <!-- TOAST -->
 <div id="toast"></div>
 
+<!-- PROFILE MODAL -->
+<div id="profile-modal-overlay">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="margin:0;">My Profile</h2>
+      <div class="icon-btn" id="profile-close-btn" title="Close" style="cursor:pointer;">✕</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:24px;">
+      <div id="profile-avatar" style="width:72px; height:72px; border-radius:50%; background:var(--accent); color:var(--accent-text); display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:700; margin-bottom:12px;">?</div>
+      <div id="profile-name" style="font-size:1.2rem; font-weight:600; color:var(--text);">—</div>
+      <div id="profile-contact" style="font-size:0.9rem; color:var(--text-sub); margin-top:4px;">—</div>
+    </div>
+    <div style="background:var(--input-bg); border-radius:12px; padding:16px; margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--input-border);">
+        <span style="color:var(--text-sub);">Credits</span>
+        <span id="profile-credits" style="color:var(--text); font-weight:600;">—</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:8px 0;">
+        <span style="color:var(--text-sub);">Login method</span>
+        <span id="profile-method" style="color:var(--text); font-weight:600;">—</span>
+      </div>
+    </div>
+    <button id="signout-btn" style="width:100%; padding:14px; background:transparent; border:1px solid #e0455c; color:#e0455c; border-radius:10px; font-weight:600; font-size:1rem; cursor:pointer; transition:all 0.2s;">Sign Out</button>
+  </div>
+</div>
+
 <!-- THEME TOGGLE -->
 <button class="theme-toggle">🌙</button>
 
@@ -1538,7 +1638,23 @@
       boostLabel: 'Boost this ad',
       distanceInfo: '📡 Showing businesses within 2km radius',
       nearbyFilter: '📍 Nearby (2km)',
-      distanceUnits: 'm away'
+      distanceUnits: 'm away',
+      hiwTitle: '💡 How Cari-Cari works',
+      hiwStep1: 'Share ads or posts about local businesses, items, & services',
+      hiwStep2: "Discover what's nearby & connect with sellers",
+      hiwStep3: 'Boost your posts to reach more people in your area',
+      hiwStep4: 'Posting <strong>Ads</strong> costs <strong>Credits</strong>, and boosting them to reach more people costs extra <strong>Credits</strong>',
+      hiwStep5: 'Upload a photo of your stall',
+      hiwStep6: 'Pin your location',
+      hiwStep7: 'Posting ads: <strong>5 Credits</strong> · Boosting: 3hr <strong>10</strong>, 1 day <strong>20</strong>, 3 days <strong>40</strong>, 1 week <strong>70</strong>',
+      catAll: '🔍 All — search a category',
+      catEatery: '🍽️ Eatery',
+      catServices: '🔧 Services',
+      catProduct: '📦 Product',
+      catMinimarket: '🏪 Minimarket (Kedai Runcit)',
+      postTab: '📝 Post',
+      adTab: '🏪 My Ads',
+      photoLabel: 'Add photos of your shop or product (up to 3)'
     },
     ms: {
       searchPlaceholder: 'Cari perniagaan, item...',
@@ -1548,22 +1664,74 @@
       descPlaceholder: 'Huraikan item atau perkhidmatan anda...',
       locationPin: '📍 Pasak lokasi anda (pilihan)',
       categoryLabel: 'Kategori',
-      eatery: 'Restoran',
+      eatery: 'Kedai Makan',
       services: 'Perkhidmatan',
       product: 'Produk',
-      supermarket: 'Mini Pasaraya',
+      supermarket: 'Kedai Runcit',
       postBtn: 'Hantar',
       sellBtn: 'Hantar Iklan',
       buyBtn: '+ Beli kredit',
       boostLabel: 'Gandakan iklan ini',
       distanceInfo: '📡 Menunjukkan perniagaan dalam radius 2km',
-      nearbyFilter: '📍 Berdekatan (2km)'
+      nearbyFilter: '📍 Berdekatan (2km)',
+      hiwTitle: '💡 Cara Cari-Cari berfungsi',
+      hiwStep1: 'Kongsi iklan atau pos tentang perniagaan, item & perkhidmatan tempatan',
+      hiwStep2: 'Temui apa yang berdekatan & berhubung dengan penjual',
+      hiwStep3: 'Gandakan pos anda untuk menjangkau lebih ramai orang di kawasan anda',
+      hiwStep4: 'Menyiarkan <strong>Iklan</strong> memerlukan <strong>Kredit</strong>, dan menggandakannya untuk menjangkau lebih ramai orang memerlukan <strong>Kredit</strong> tambahan',
+      hiwStep5: 'Muat naik foto gerai anda',
+      hiwStep6: 'Pasak lokasi anda',
+      hiwStep7: 'Menyiarkan iklan: <strong>5 Kredit</strong> · Menggandakan: 3 jam <strong>10</strong>, 1 hari <strong>20</strong>, 3 hari <strong>40</strong>, 1 minggu <strong>70</strong>',
+      catAll: '🔍 Semua — cari kategori',
+      catEatery: '🍽️ Kedai Makan',
+      catServices: '🔧 Perkhidmatan',
+      catProduct: '📦 Produk',
+      catMinimarket: '🏪 Kedai Runcit',
+      postTab: '📝 Pos',
+      adTab: '🏪 Iklan Saya',
+      photoLabel: 'Tambah foto kedai atau produk anda (sehingga 3)'
+    },
+    zh: {
+      searchPlaceholder: '搜索商家、商品...',
+      postPlaceholder: '你在想什么？',
+      sellPlaceholder: '商品或商家名称',
+      priceLabel: '价格（可选，例如 25 RM）',
+      descPlaceholder: '描述你的商品或服务...',
+      locationPin: '📍 标记你的位置（可选）',
+      categoryLabel: '类别',
+      eatery: '餐饮',
+      services: '服务',
+      product: '产品',
+      supermarket: '迷你超市',
+      postBtn: '发布',
+      sellBtn: '发布广告',
+      buyBtn: '+ 购买积分',
+      boostLabel: '推广此广告',
+      distanceInfo: '📡 显示 2 公里范围内的商家',
+      nearbyFilter: '📍 附近 (2公里)',
+      distanceUnits: '米外',
+      hiwTitle: '💡 Cari-Cari 如何运作',
+      hiwStep1: '分享关于本地商家、商品和服务的广告或帖子',
+      hiwStep2: '发现附近的商家并与卖家联系',
+      hiwStep3: '推广你的帖子，接触你所在地区更多的人',
+      hiwStep4: '发布<strong>广告</strong>需要<strong>积分</strong>，推广广告以接触更多人需要额外的<strong>积分</strong>',
+      hiwStep5: '上传你的摊位照片',
+      hiwStep6: '标记你的位置',
+      hiwStep7: '发布广告：<strong>5 积分</strong> · 推广：3小时 <strong>10</strong>，1天 <strong>20</strong>，3天 <strong>40</strong>，1周 <strong>70</strong>',
+      catAll: '🔍 全部 — 搜索类别',
+      catEatery: '🍽️ 餐饮',
+      catServices: '🔧 服务',
+      catProduct: '📦 产品',
+      catMinimarket: '🏪 杂货店',
+      postTab: '📝 帖子',
+      adTab: '🏪 我的广告',
+      photoLabel: '添加你的商店或产品照片（最多3张）'
     }
   };
 
   languageToggle.addEventListener('click', () => {
-    currentLanguage = currentLanguage === 'eng' ? 'ms' : 'eng';
-    langDisplay.textContent = currentLanguage === 'eng' ? 'ENG' : 'BM';
+    currentLanguage = currentLanguage === 'eng' ? 'ms' : currentLanguage === 'ms' ? 'zh' : 'eng';
+    langDisplay.textContent = currentLanguage === 'eng' ? 'ENG' : currentLanguage === 'ms' ? 'BM' : '中文';
     updateLanguage();
   });
 
@@ -1571,7 +1739,8 @@
     const t = translations[currentLanguage];
 
     // Update placeholders
-    document.querySelector('.search-box input').placeholder = t.searchPlaceholder;
+    const searchBoxInput = document.querySelector('.search-box input');
+    if (searchBoxInput) searchBoxInput.placeholder = t.searchPlaceholder;
     document.getElementById('text-post-input').placeholder = t.postPlaceholder;
     document.querySelector('#ad-fields input[placeholder*="Item"]').placeholder = t.sellPlaceholder;
     document.querySelector('#ad-fields textarea').placeholder = t.descPlaceholder;
@@ -1592,6 +1761,44 @@
 
     // Update distance info
     document.getElementById('distance-text').textContent = t.distanceInfo;
+
+    // Update How Cari-Cari works
+    const hiwTitle = document.getElementById('hiw-title');
+    if (hiwTitle) hiwTitle.textContent = t.hiwTitle;
+    const hiwStep1 = document.getElementById('hiw-step1');
+    if (hiwStep1) hiwStep1.textContent = t.hiwStep1;
+    const hiwStep2 = document.getElementById('hiw-step2');
+    if (hiwStep2) hiwStep2.textContent = t.hiwStep2;
+    const hiwStep3 = document.getElementById('hiw-step3');
+    if (hiwStep3) hiwStep3.textContent = t.hiwStep3;
+    const hiwStep4 = document.getElementById('hiw-step4');
+    if (hiwStep4) hiwStep4.innerHTML = t.hiwStep4;
+    const hiwStep5 = document.getElementById('hiw-step5');
+    if (hiwStep5) hiwStep5.textContent = t.hiwStep5;
+    const hiwStep6 = document.getElementById('hiw-step6');
+    if (hiwStep6) hiwStep6.textContent = t.hiwStep6;
+    const hiwStep7 = document.getElementById('hiw-step7');
+    if (hiwStep7) hiwStep7.innerHTML = t.hiwStep7;
+
+    // Update header category dropdown
+    const catOptAll = document.getElementById('catOptAll');
+    if (catOptAll) catOptAll.textContent = t.catAll;
+    const catOptEatery = document.getElementById('catOptEatery');
+    if (catOptEatery) catOptEatery.textContent = t.catEatery;
+    const catOptServices = document.getElementById('catOptServices');
+    if (catOptServices) catOptServices.textContent = t.catServices;
+    const catOptProduct = document.getElementById('catOptProduct');
+    if (catOptProduct) catOptProduct.textContent = t.catProduct;
+    const catOptMinimarket = document.getElementById('catOptMinimarket');
+    if (catOptMinimarket) catOptMinimarket.textContent = t.catMinimarket;
+
+    // Update composer tabs
+    const postTabLabel = document.getElementById('postTabLabel');
+    if (postTabLabel) postTabLabel.textContent = t.postTab;
+    const adTabLabel = document.getElementById('adTabLabel');
+    if (adTabLabel) adTabLabel.textContent = t.adTab;
+    const photoLabel = document.getElementById('photo-upload-label');
+    if (photoLabel && t.photoLabel) photoLabel.textContent = t.photoLabel;
 
     // Update category labels
     const categoryLabels = {
@@ -1831,19 +2038,13 @@
     document.getElementById('showMapBtn').style.display = 'block';
   });
 
-  // ===== SEARCH & FILTER FUNCTIONALITY =====
+  // ===== CATEGORY FILTER FUNCTIONALITY =====
   function filterShops() {
-    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
     const selectedCategory = document.getElementById('categoryFilter').value;
-    
-    // Filter shops by category and search query
+
+    // Filter shops by category
     let filtered = shops.filter(shop => {
-      const matchCategory = !selectedCategory || shop.category === selectedCategory;
-      const matchSearch = !searchQuery || 
-        shop.name.toLowerCase().includes(searchQuery) || 
-        shop.location.toLowerCase().includes(searchQuery);
-      
-      return matchCategory && matchSearch;
+      return !selectedCategory || shop.category === selectedCategory;
     });
 
     // Sort by distance (nearest first)
@@ -1860,8 +2061,7 @@
     return filtered;
   }
 
-  // Add event listeners for search and category filter
-  document.getElementById('searchInput').addEventListener('keyup', filterShops);
+  // Add event listener for category filter
   document.getElementById('categoryFilter').addEventListener('change', filterShops);
 
   // ===== ADMIN MODE (Hide Revenue from Normal Users) =====
@@ -3010,6 +3210,95 @@
     });
   }
 
+  // ===== AD PHOTO UPLOAD (up to 3, compressed, stored via Supabase->R2) =====
+  let selectedPhotos = [null, null, null]; // holds compressed Blobs
+  let activePhotoSlot = null;
+  const photoFileInput = document.getElementById('photo-file-input');
+
+  // Compress an image file to ~800px, JPEG 0.7, return a Blob
+  function compressImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = e => { img.src = e.target.result; };
+      reader.onerror = reject;
+      img.onload = () => {
+        const maxDim = 800;
+        let { width, height } = img;
+        if (width > height && width > maxDim) {
+          height = Math.round(height * maxDim / width); width = maxDim;
+        } else if (height > maxDim) {
+          width = Math.round(width * maxDim / height); height = maxDim;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Compression failed')), 'image/jpeg', 0.7);
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderPhotoSlot(index) {
+    const slot = document.querySelector(`.photo-slot[data-slot="${index}"]`);
+    if (!slot) return;
+    const blob = selectedPhotos[index];
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      slot.innerHTML = `<img src="${url}" alt="photo"><button class="photo-remove" data-remove="${index}">✕</button>`;
+    } else {
+      slot.innerHTML = '<span class="photo-plus">+</span>';
+    }
+  }
+
+  document.querySelectorAll('.photo-slot').forEach(slot => {
+    slot.addEventListener('click', (e) => {
+      if (e.target.classList.contains('photo-remove')) {
+        const idx = parseInt(e.target.dataset.remove, 10);
+        selectedPhotos[idx] = null;
+        renderPhotoSlot(idx);
+        e.stopPropagation();
+        return;
+      }
+      activePhotoSlot = parseInt(slot.dataset.slot, 10);
+      photoFileInput.click();
+    });
+  });
+
+  photoFileInput.addEventListener('change', async () => {
+    const file = photoFileInput.files[0];
+    photoFileInput.value = ''; // reset so same file can be re-picked
+    if (!file || activePhotoSlot === null) return;
+    try {
+      const blob = await compressImage(file);
+      selectedPhotos[activePhotoSlot] = blob;
+      renderPhotoSlot(activePhotoSlot);
+    } catch (err) {
+      console.error('Photo compress error:', err);
+      showToast('Could not process that image');
+    }
+  });
+
+  // Upload all selected photos, return array of public R2 URLs
+  async function uploadSelectedPhotos() {
+    const urls = [];
+    for (let i = 0; i < selectedPhotos.length; i++) {
+      const blob = selectedPhotos[i];
+      if (!blob) continue;
+      const rand = Math.random().toString(36).slice(2, 8);
+      const path = `advertisements/${Date.now()}-${rand}-${i}.jpg`;
+      const url = await supabaseClient.uploadPhoto(STORAGE_BUCKET, path, blob);
+      urls.push(url);
+    }
+    return urls;
+  }
+
+  function clearSelectedPhotos() {
+    selectedPhotos = [null, null, null];
+    [0,1,2].forEach(renderPhotoSlot);
+  }
+
   // ===== POST BUTTON =====
   let postBtnRef = document.querySelector('#post-fields .post-btn');
   let adPostBtnRef = document.querySelector('#ad-fields .post-btn');
@@ -3030,7 +3319,7 @@
     document.getElementById('text-post-input').value = '';
   });
 
-  adPostBtnRef.addEventListener('click', () => {
+  adPostBtnRef.addEventListener('click', async () => {
     const isAdTab = adTab.classList.contains('active');
     const adCost = 5;
     const boostCost = (isAdTab && composerBoostOn) ? composerBoostCost : 0;
@@ -3065,6 +3354,27 @@
       return;
     }
 
+    // Upload photos first (if any) before charging/posting
+    let photoUrls = [];
+    const hasPhotos = selectedPhotos.some(p => p);
+    if (hasPhotos) {
+      adPostBtnRef.disabled = true;
+      const originalBtnText = adPostBtnRef.textContent;
+      adPostBtnRef.textContent = '⏳ Uploading photos...';
+      try {
+        photoUrls = await uploadSelectedPhotos();
+      } catch (err) {
+        console.error('Photo upload failed:', err);
+        postCostNote.textContent = 'Photo upload failed — check your connection and try again';
+        postCostNote.style.color = '#e0455c';
+        adPostBtnRef.disabled = false;
+        adPostBtnRef.textContent = originalBtnText;
+        return;
+      }
+      adPostBtnRef.disabled = false;
+      adPostBtnRef.textContent = originalBtnText;
+    }
+
     myCredits -= totalCost;
     updateCreditsPill();
     postCostNote.style.color = '';
@@ -3083,7 +3393,8 @@
       location: hasLocation ? locationBox.textContent.replace('📍 Location pinned', '📍') : null,
       boosted: boostCost > 0,
       boostLabel: composerBoostLabel,
-      category: selectedCategory
+      category: selectedCategory,
+      photos: photoUrls
     });
 
     if (boostCost > 0) {
@@ -3101,6 +3412,7 @@
     document.querySelector('#ad-fields input[placeholder="Item or business name"]').value = '';
     document.getElementById('price-input').value = '';
     document.querySelector('#ad-fields textarea').value = '';
+    clearSelectedPhotos();
     document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('selected'));
     selectedCategory = null;
     composerBoostOn = false;
@@ -3115,7 +3427,7 @@
     }, 500);
   });
 
-  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category }) {
+  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category, photos }) {
     const feedContainer = document.getElementById('feed-container');
     const item = document.createElement('div');
     item.className = 'feed-item just-posted' + (boosted ? ' is-boosted' : '');
@@ -3131,7 +3443,13 @@
     const nameHtml = isAd ? (name || 'Your business') : 'You';
     const priceHtml = isAd && price ? `<div class="feed-item-price">${price} RM</div>` : '';
     const locationHtml = isAd && location ? `<div class="feed-location">${location}</div>` : '';
-    const mediaHtml = isAd ? `<div class="feed-media">🖼️ New ad</div>` : '';
+    let mediaHtml = '';
+    if (photos && photos.length > 0) {
+      const imgs = photos.map(u => `<img src="${u}" alt="ad photo" style="width:100%; border-radius:10px; margin-bottom:6px; object-fit:cover;">`).join('');
+      mediaHtml = `<div class="feed-media-photos">${imgs}</div>`;
+    } else if (isAd) {
+      mediaHtml = `<div class="feed-media">🖼️ New ad</div>`;
+    }
     const boostActionHtml = isAd
       ? (boosted
           ? `<span style="font-size:0.72rem; color:var(--text-sub); margin-left:auto;">Boosted · ${boostLabel}</span>`
@@ -3420,7 +3738,7 @@
 
   // ===== SUPABASE INITIALIZATION =====
   const SUPABASE_URL = 'https://ihecgvosemcpxqweqlty.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloZWNxdm9zZW1jcHhxd2VxbHR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NTg0MjMsImV4cCI6MjA5OTIzNDQyM30.ck6Priblat_M2Kd_ryIyQUsxDpOXxmUSsd9ox4_XGs0';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloZWNndm9zZW1jcHhxd2VxbHR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NTg0MjMsImV4cCI6MjA5OTIzNDQyM30.ck6Priblat_M2Kd_ryIyQUsxDpOXxmUSsd9ox4_XGs0';
   
   const supabaseClient = {
     url: SUPABASE_URL,
@@ -3478,8 +3796,33 @@
       const response = await this.request(`/users?email=eq.${email}`);
       const data = await response.json();
       return data.length > 0 ? data[0] : null;
+    },
+
+    // Upload a file (Blob) to Supabase Storage bucket, return the R2 public URL
+    async uploadPhoto(bucket, path, blob) {
+      const url = `${this.url}/storage/v1/object/${bucket}/${path}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': this.key,
+          'Authorization': `Bearer ${this.key}`,
+          'Content-Type': blob.type || 'image/jpeg',
+          'x-upsert': 'true'
+        },
+        body: blob
+      });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Upload failed (${response.status}): ${errText}`);
+      }
+      // Serve from R2 public domain to keep viewing egress free
+      return `${R2_PUBLIC_URL}/${path}`;
     }
   };
+
+  // R2 public bucket domain — images are SERVED from here (free egress)
+  const R2_PUBLIC_URL = 'https://pub-11e3f4324d8e43319eccbdeffb488911.r2.dev';
+  const STORAGE_BUCKET = 'cari-cari-files';
   
   console.log('✅ Supabase client initialized');
 
@@ -3604,8 +3947,51 @@
     document.getElementById('landingPage').classList.add('hidden');
     document.getElementById('authContainer').classList.add('hidden');
     document.getElementById('app').classList.add('active');
+    populateProfile();
     console.log('🎉 App loaded for user:', currentUser.name);
   }
+
+  function populateProfile() {
+    if (!currentUser) return;
+    const name = currentUser.name || 'User';
+    const initial = name.trim().charAt(0).toUpperCase() || '?';
+    document.getElementById('profile-avatar').textContent = initial;
+    document.getElementById('profile-name').textContent = name;
+    // Show whichever identifier they have
+    const contact = currentUser.email || currentUser.phone || '—';
+    document.getElementById('profile-contact').textContent = contact;
+    document.getElementById('profile-credits').textContent =
+      (currentUser.credits != null ? currentUser.credits : 250) + ' credits';
+    document.getElementById('profile-method').textContent =
+      currentUser.email ? '📧 Email' : '📱 Phone';
+  }
+
+  function openProfile() {
+    populateProfile();
+    document.getElementById('profile-modal-overlay').classList.add('open');
+  }
+
+  function closeProfile() {
+    document.getElementById('profile-modal-overlay').classList.remove('open');
+  }
+
+  function signOut() {
+    localStorage.removeItem('cariCariCurrentUser');
+    currentUser = null;
+    closeProfile();
+    document.getElementById('app').classList.remove('active');
+    document.getElementById('authContainer').classList.add('hidden');
+    document.getElementById('landingPage').classList.remove('hidden');
+    console.log('👋 Signed out');
+  }
+
+  // Wire up profile controls
+  document.getElementById('profile-btn').addEventListener('click', openProfile);
+  document.getElementById('profile-close-btn').addEventListener('click', closeProfile);
+  document.getElementById('signout-btn').addEventListener('click', signOut);
+  document.getElementById('profile-modal-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'profile-modal-overlay') closeProfile();
+  });
 
   function handleSignIn() {
     const email = document.getElementById('signInEmail').value.trim();
@@ -3700,26 +4086,27 @@
 
         console.log('✅ Account created');
 
-        try {
-          await supabaseClient.insertUser({
-            email: email,
-            name: name,
-            phone: phone,
-            credits: 250,
-            created_at: new Date().toISOString()
-          });
-          console.log('✅ Profile saved');
-        } catch (err) {
-          console.warn('⚠️ Profile save error:', err);
-        }
-
-        currentUser = { name, email, phone };
+        // Enter the app right away — don't make the user wait on the profile write
+        currentUser = { name, email, phone, credits: 250 };
         localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
         console.log('✅ Signed up:', currentUser);
-        
+
         signUpBtn.disabled = false;
         signUpBtn.textContent = originalText;
         showApp();
+
+        // Save profile to the database in the background
+        supabaseClient.insertUser({
+          email: email,
+          name: name,
+          phone: phone,
+          credits: 250,
+          created_at: new Date().toISOString()
+        }).then(() => {
+          console.log('✅ Profile saved');
+        }).catch(err => {
+          console.warn('⚠️ Profile save error:', err);
+        });
       })
       .catch(err => {
         console.error('❌ Error:', err);
