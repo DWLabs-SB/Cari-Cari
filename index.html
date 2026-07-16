@@ -3432,7 +3432,8 @@
         category: ad.category || null,
         photos: Array.isArray(ad.photos) ? ad.photos : [],
         adId: ad.id,
-        reactions: ad.reactions || 0,
+        thumbsUp: ad.thumbs_up || 0,
+        thumbsDown: ad.thumbs_down || 0,
         lat: ad.lat != null ? ad.lat : null,
         lng: ad.lng != null ? ad.lng : null
       });
@@ -3722,7 +3723,7 @@
     }, 500);
   });
 
-  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category, photos, adId, reactions, lat, lng }) {
+  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category, photos, adId, thumbsUp, thumbsDown, lat, lng }) {
     const feedContainer = document.getElementById('feed-container');
     const item = document.createElement('div');
     item.className = 'feed-item just-posted' + (boosted ? ' is-boosted' : '');
@@ -3761,7 +3762,8 @@
       ? `<button class="action-btn directions-btn" data-lat="${coordLat}" data-lng="${coordLng}">🧭 Directions</button>`
       : '';
 
-    const reactionCount = reactions || 0;
+    const tUp = thumbsUp || 0;
+    const tDown = thumbsDown || 0;
 
     item.innerHTML = `
       <div class="feed-header">
@@ -3777,7 +3779,8 @@
       <div class="feed-text"></div>
       ${locationHtml}
       <div class="actions-row">
-        <button class="action-btn like-btn">🤍 React · ${reactionCount}</button>
+        <button class="action-btn thumbs-up-btn">👍 <span class="tup-count">${tUp}</span></button>
+        <button class="action-btn thumbs-down-btn">👎 <span class="tdown-count">${tDown}</span></button>
         <button class="action-btn comment-toggle">💬 Comment · 0</button>
         ${directionsActionHtml}
         ${boostActionHtml}
@@ -3835,17 +3838,55 @@
       });
     }
 
-    const likeBtn = item.querySelector('.like-btn');
-    likeBtn.addEventListener('click', () => {
-      likeBtn.classList.toggle('reacted');
-      const count = parseInt(likeBtn.textContent.match(/\d+/)[0]) + (likeBtn.classList.contains('reacted') ? 1 : -1);
-      likeBtn.textContent = `🤍 React · ${count}`;
-      // Persist the new count to the database
-      if (item.dataset.adId) {
-        supabaseClient.setAdReactions(item.dataset.adId, count).catch(err => {
-          console.warn('Could not save reaction:', err.message);
-        });
+    // Thumbs up / down — instant UI update, DB sync in background
+    const thumbsUpBtn = item.querySelector('.thumbs-up-btn');
+    const thumbsDownBtn = item.querySelector('.thumbs-down-btn');
+    const upCountEl = item.querySelector('.tup-count');
+    const downCountEl = item.querySelector('.tdown-count');
+    // Track this device's current vote: null, 'up', or 'down'
+    let myVote = null;
+
+    function saveThumbs() {
+      if (!item.dataset.adId) return;
+      const up = parseInt(upCountEl.textContent) || 0;
+      const down = parseInt(downCountEl.textContent) || 0;
+      supabaseClient.setAdThumbs(item.dataset.adId, up, down).catch(err => {
+        console.warn('Could not save reaction:', err.message);
+      });
+    }
+
+    thumbsUpBtn.addEventListener('click', () => {
+      let up = parseInt(upCountEl.textContent) || 0;
+      let down = parseInt(downCountEl.textContent) || 0;
+      if (myVote === 'up') {
+        up -= 1; myVote = null;
+        thumbsUpBtn.classList.remove('reacted');
+      } else {
+        up += 1;
+        if (myVote === 'down') { down -= 1; thumbsDownBtn.classList.remove('reacted'); }
+        myVote = 'up';
+        thumbsUpBtn.classList.add('reacted');
       }
+      upCountEl.textContent = up;       // instant
+      downCountEl.textContent = down;   // instant
+      saveThumbs();                     // background
+    });
+
+    thumbsDownBtn.addEventListener('click', () => {
+      let up = parseInt(upCountEl.textContent) || 0;
+      let down = parseInt(downCountEl.textContent) || 0;
+      if (myVote === 'down') {
+        down -= 1; myVote = null;
+        thumbsDownBtn.classList.remove('reacted');
+      } else {
+        down += 1;
+        if (myVote === 'up') { up -= 1; thumbsUpBtn.classList.remove('reacted'); }
+        myVote = 'down';
+        thumbsDownBtn.classList.add('reacted');
+      }
+      upCountEl.textContent = up;       // instant
+      downCountEl.textContent = down;   // instant
+      saveThumbs();                     // background
     });
   }
 
@@ -3877,14 +3918,8 @@
     document.getElementById('boost-modal-overlay').classList.remove('open');
   });
 
-  // ===== REACTIONS (delegated) =====
+  // ===== DELEGATED ACTIONS =====
   document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('like-btn')) {
-      e.target.classList.toggle('reacted');
-      const count = parseInt(e.target.textContent.match(/\d+/)[0]) + (e.target.classList.contains('reacted') ? 1 : -1);
-      e.target.textContent = `🤍 React · ${count}`;
-    }
-
     // ===== DIRECTIONS BUTTON =====
     if (e.target.classList.contains('directions-btn')) {
       const lat = parseFloat(e.target.dataset.lat);
@@ -4056,11 +4091,11 @@
       return response.json();
     },
 
-    // Update an ad's reaction count
-    async setAdReactions(adId, count) {
+    // Update an ad's thumbs up/down counts
+    async setAdThumbs(adId, thumbsUp, thumbsDown) {
       const response = await this.request(`/advertisements?id=eq.${adId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ reactions: count })
+        body: JSON.stringify({ thumbs_up: thumbsUp, thumbs_down: thumbsDown })
       });
       return response.ok;
     },
