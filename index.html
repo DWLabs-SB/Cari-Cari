@@ -3226,7 +3226,7 @@
   }
 
   // ===== FEED ITEM HELPERS =====
-  function wireCommentInput(inputRow) {
+  function wireCommentInput(inputRow, item, commentToggle) {
     const input = inputRow.querySelector('input');
     const sendBtn = inputRow.querySelector('.comment-send');
     const commentSection = inputRow.closest('.comments-section');
@@ -3235,11 +3235,33 @@
       const text = input.value.trim();
       if (!text) return;
 
+      const authorName = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.name : 'You';
+
       const comment = document.createElement('div');
       comment.className = 'comment';
-      comment.innerHTML = `<div class="comment-name">You</div><div class="comment-text">${text}</div>`;
+      comment.innerHTML = `<div class="comment-name"></div><div class="comment-text"></div>`;
+      comment.querySelector('.comment-name').textContent = authorName;
+      comment.querySelector('.comment-text').textContent = text;
       commentSection.insertBefore(comment, inputRow);
       input.value = '';
+
+      // Bump the comment counter
+      if (commentToggle) {
+        const n = parseInt((commentToggle.textContent.match(/\d+/) || [0])[0]) + 1;
+        commentToggle.textContent = `💬 Comment · ${n}`;
+      }
+
+      // Persist to database if this ad has an id
+      if (item && item.dataset.adId) {
+        supabaseClient.insertComment({
+          ad_id: item.dataset.adId,
+          author_name: authorName,
+          text: text,
+          created_at: new Date().toISOString()
+        }).catch(err => {
+          console.warn('Could not save comment:', err.message);
+        });
+      }
     });
   }
 
@@ -3408,7 +3430,11 @@
         boosted: !!ad.boosted,
         boostLabel: ad.boost_label || '',
         category: ad.category || null,
-        photos: Array.isArray(ad.photos) ? ad.photos : []
+        photos: Array.isArray(ad.photos) ? ad.photos : [],
+        adId: ad.id,
+        reactions: ad.reactions || 0,
+        lat: ad.lat != null ? ad.lat : null,
+        lng: ad.lng != null ? ad.lng : null
       });
     });
 
@@ -3618,6 +3644,8 @@
       category: selectedCategory,
       photos: photoUrls
     });
+    // The just-posted item is at the top of the feed
+    const justPostedItem = document.getElementById('feed-container').firstElementChild;
 
     if (boostCost > 0) {
       addBoostCarouselCard({
@@ -3652,8 +3680,12 @@
       boosted: boostCost > 0,
       boost_label: boostCost > 0 ? composerBoostLabel : null,
       created_at: new Date().toISOString()
-    }).then(() => {
+    }).then((saved) => {
       console.log('✅ Ad saved to database');
+      // Attach the new DB id to the feed item so its reactions/comments persist
+      if (saved && saved[0] && saved[0].id && justPostedItem) {
+        justPostedItem.dataset.adId = saved[0].id;
+      }
     }).catch(err => {
       console.warn('⚠️ Ad DB save failed:', err.message);
     });
@@ -3690,14 +3722,20 @@
     }, 500);
   });
 
-  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category, photos }) {
+  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category, photos, adId, reactions, lat, lng }) {
     const feedContainer = document.getElementById('feed-container');
     const item = document.createElement('div');
     item.className = 'feed-item just-posted' + (boosted ? ' is-boosted' : '');
 
-    if (isAd && location && selectedCoords) {
-      item.dataset.lat = selectedCoords.lat;
-      item.dataset.lng = selectedCoords.lng;
+    // Store the database id so reactions/comments can attach and persist
+    if (adId) item.dataset.adId = adId;
+
+    // Coordinates: prefer explicit lat/lng (DB-loaded), else the just-picked composer coords
+    const coordLat = (lat != null) ? lat : (selectedCoords ? selectedCoords.lat : null);
+    const coordLng = (lng != null) ? lng : (selectedCoords ? selectedCoords.lng : null);
+    if (isAd && coordLat != null && coordLng != null) {
+      item.dataset.lat = coordLat;
+      item.dataset.lng = coordLng;
     }
 
     const badgeHtml = isAd
@@ -3719,9 +3757,11 @@
           ? `<span style="font-size:0.72rem; color:var(--text-sub); margin-left:auto;">Boosted · ${boostLabel}</span>`
           : `<button class="action-btn boost-btn">🚀 Boost</button>`)
       : '';
-    const directionsActionHtml = (isAd && location && selectedCoords)
-      ? `<button class="action-btn directions-btn" data-lat="${selectedCoords.lat}" data-lng="${selectedCoords.lng}">🧭 Directions</button>`
+    const directionsActionHtml = (isAd && coordLat != null && coordLng != null)
+      ? `<button class="action-btn directions-btn" data-lat="${coordLat}" data-lng="${coordLng}">🧭 Directions</button>`
       : '';
+
+    const reactionCount = reactions || 0;
 
     item.innerHTML = `
       <div class="feed-header">
@@ -3737,7 +3777,7 @@
       <div class="feed-text"></div>
       ${locationHtml}
       <div class="actions-row">
-        <button class="action-btn like-btn">🤍 React · 0</button>
+        <button class="action-btn like-btn">🤍 React · ${reactionCount}</button>
         <button class="action-btn comment-toggle">💬 Comment · 0</button>
         ${directionsActionHtml}
         ${boostActionHtml}
@@ -3755,10 +3795,33 @@
     feedContainer.insertBefore(item, feedContainer.firstChild);
     item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    item.querySelector('.comment-toggle').addEventListener('click', function() {
-      item.querySelector('.comments-section').classList.toggle('open');
+    const commentsSection = item.querySelector('.comments-section');
+    const commentToggle = item.querySelector('.comment-toggle');
+    let commentsLoaded = false;
+
+    commentToggle.addEventListener('click', async function() {
+      commentsSection.classList.toggle('open');
+      // Load saved comments from DB the first time it's opened
+      if (!commentsLoaded && commentsSection.classList.contains('open') && item.dataset.adId) {
+        commentsLoaded = true;
+        try {
+          const saved = await supabaseClient.getComments(item.dataset.adId);
+          const inputRow = commentsSection.querySelector('.comment-input-row');
+          saved.forEach(c => {
+            const cEl = document.createElement('div');
+            cEl.className = 'comment';
+            cEl.innerHTML = `<div class="comment-name"></div><div class="comment-text"></div>`;
+            cEl.querySelector('.comment-name').textContent = c.author_name || 'User';
+            cEl.querySelector('.comment-text').textContent = c.text || '';
+            commentsSection.insertBefore(cEl, inputRow);
+          });
+          commentToggle.textContent = `💬 Comment · ${saved.length}`;
+        } catch (err) {
+          console.warn('Could not load comments:', err.message);
+        }
+      }
     });
-    wireCommentInput(item.querySelector('.comment-input-row'));
+    wireCommentInput(item.querySelector('.comment-input-row'), item, commentToggle);
 
     const newBoostBtn = item.querySelector('.boost-btn');
     if (newBoostBtn) {
@@ -3777,6 +3840,12 @@
       likeBtn.classList.toggle('reacted');
       const count = parseInt(likeBtn.textContent.match(/\d+/)[0]) + (likeBtn.classList.contains('reacted') ? 1 : -1);
       likeBtn.textContent = `🤍 React · ${count}`;
+      // Persist the new count to the database
+      if (item.dataset.adId) {
+        supabaseClient.setAdReactions(item.dataset.adId, count).catch(err => {
+          console.warn('Could not save reaction:', err.message);
+        });
+      }
     });
   }
 
@@ -4081,6 +4150,43 @@
       const response = await this.request('/advertisements?order=created_at.desc');
       if (!response.ok) return [];
       return response.json();
+    },
+
+    // Update an ad's reaction count
+    async setAdReactions(adId, count) {
+      const response = await this.request(`/advertisements?id=eq.${adId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reactions: count })
+      });
+      return response.ok;
+    },
+
+    // Comments
+    async insertComment(commentData) {
+      const response = await this.request('/ad_comments', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify(commentData)
+      });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Comment save failed (${response.status}): ${errText}`);
+      }
+      return response.json();
+    },
+
+    async getComments(adId) {
+      const response = await this.request(`/ad_comments?ad_id=eq.${adId}&order=created_at.asc`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+
+    // Delete a user account row (by email)
+    async deleteUser(email) {
+      const response = await this.request(`/users?email=eq.${email}`, {
+        method: 'DELETE'
+      });
+      return response.ok;
     }
   };
 
