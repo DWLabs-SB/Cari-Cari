@@ -1846,25 +1846,26 @@
     if (!feedContainer || !userLocation) return;
     const items = Array.from(feedContainer.querySelectorAll('.feed-item'));
 
+    let locatedCount = 0;
     items.forEach(item => {
       const lat = item.dataset.lat;
       const lng = item.dataset.lng;
       let distance = Infinity;
       if (lat && lng) {
         distance = calculateDistance(userLocation.lat, userLocation.lng, parseFloat(lat), parseFloat(lng));
-        // Show/refresh the "X away" label
+        locatedCount++;
+        // Prominent distance badge in the feed header
         let distEl = item.querySelector('[data-distance]');
         if (!distEl) {
-          const actionRow = item.querySelector('.actions-row');
-          if (actionRow) {
+          const header = item.querySelector('.feed-header');
+          if (header) {
             distEl = document.createElement('span');
-            distEl.style.fontSize = '0.72rem';
-            distEl.style.color = 'var(--text-sub)';
             distEl.dataset.distance = 'true';
-            actionRow.appendChild(distEl);
+            distEl.style.cssText = 'margin-left:auto; background:var(--accent); color:var(--accent-text); font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:999px; white-space:nowrap;';
+            header.appendChild(distEl);
           }
         }
-        if (distEl) distEl.textContent = `${formatDistance(distance)} away`;
+        if (distEl) distEl.textContent = `📍 ${formatDistance(distance)}`;
       }
       item._distance = distance;
       item.style.display = 'block';
@@ -1873,6 +1874,8 @@
     // Reorder: closest first; items without coordinates fall to the bottom
     items.sort((a, b) => a._distance - b._distance);
     items.forEach(item => feedContainer.appendChild(item));
+
+    return locatedCount;
   }
 
   // When a non-nearby filter is active, just show everything in original order
@@ -1897,13 +1900,17 @@
     navigator.geolocation.getCurrentPosition(
       pos => {
         userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude, name: 'Your location' };
-        distanceText.textContent = '📍 Showing what\'s closest to you first';
-        sortFeedByDistance();
+        const located = sortFeedByDistance() || 0;
+        if (located > 0) {
+          distanceText.textContent = `📍 Location found — showing ${located} nearby, closest first`;
+        } else {
+          distanceText.textContent = '📍 Location found — no nearby ads have a pinned location yet';
+        }
       },
       err => {
         console.warn('Geolocation error:', err.message);
         if (err.code === 1) {
-          distanceText.textContent = '⚠️ Location blocked — enable it to see what\'s nearest';
+          distanceText.textContent = '⚠️ Location blocked — enable it in your browser to see what\'s nearest';
         } else {
           distanceText.textContent = '⚠️ Could not get your location — try again';
         }
@@ -3403,27 +3410,40 @@
     // getAds() already returns newest-first. Render feed oldest-first so newest ends on top
     // (addFeedItem inserts at the top), and carousel in natural newest-first order.
     ads.slice().reverse().forEach(ad => {
-      addFeedItem({
-        isAd: true,
-        name: ad.business_name || 'Business',
-        price: ad.price || '',
-        text: ad.description || 'Advertisement',
-        location: ad.location_text || null,
-        boosted: !!ad.boosted,
-        boostLabel: ad.boost_label || '',
-        category: ad.category || null,
-        photos: Array.isArray(ad.photos) ? ad.photos : [],
-        adId: ad.id,
-        thumbsUp: ad.thumbs_up || 0,
-        thumbsDown: ad.thumbs_down || 0,
-        lat: ad.lat != null ? ad.lat : null,
-        lng: ad.lng != null ? ad.lng : null,
-        sellerEmail: ad.seller_email || null,
-        sellerPhone: ad.seller_phone || null
-      });
+      if (ad.is_post) {
+        // Personal post — render as a non-ad feed item
+        addFeedItem({
+          isAd: false,
+          text: ad.description || '',
+          adId: ad.id,
+          thumbsUp: ad.thumbs_up || 0,
+          thumbsDown: ad.thumbs_down || 0,
+          sellerEmail: ad.seller_email || null,
+          sellerPhone: ad.seller_phone || null
+        });
+      } else {
+        addFeedItem({
+          isAd: true,
+          name: ad.business_name || 'Business',
+          price: ad.price || '',
+          text: ad.description || 'Advertisement',
+          location: ad.location_text || null,
+          boosted: !!ad.boosted,
+          boostLabel: ad.boost_label || '',
+          category: ad.category || null,
+          photos: Array.isArray(ad.photos) ? ad.photos : [],
+          adId: ad.id,
+          thumbsUp: ad.thumbs_up || 0,
+          thumbsDown: ad.thumbs_down || 0,
+          lat: ad.lat != null ? ad.lat : null,
+          lng: ad.lng != null ? ad.lng : null,
+          sellerEmail: ad.seller_email || null,
+          sellerPhone: ad.seller_phone || null
+        });
+      }
     });
 
-    ads.filter(ad => ad.boosted).forEach(ad => {
+    ads.filter(ad => ad.boosted && !ad.is_post).forEach(ad => {
       addBoostCarouselCard({
         name: ad.business_name || 'Business',
         price: ad.price || '',
@@ -3439,8 +3459,8 @@
       });
     });
 
-    // Plot every located ad on the dashboard map
-    ads.forEach(ad => registerAdLocation(ad));
+    // Plot every located ad (not posts) on the dashboard map
+    ads.filter(ad => !ad.is_post).forEach(ad => registerAdLocation(ad));
 
     console.log(`✅ Loaded ${ads.length} ads from database`);
   }
@@ -3548,8 +3568,27 @@
     showToast('✅ Posted — free, no credits used');
 
     addFeedItem({ isAd: false, text: text });
+    const justPosted = document.getElementById('feed-container').firstElementChild;
 
     document.getElementById('text-post-input').value = '';
+
+    // Persist the post to the database (stored in advertisements table, flagged as a post)
+    supabaseClient.insertAd({
+      seller_name: currentUser ? currentUser.name : 'Anonymous',
+      seller_email: currentUser ? (currentUser.email || null) : null,
+      seller_phone: currentUser ? (currentUser.phone || null) : null,
+      is_post: true,
+      description: text,
+      boosted: false,
+      created_at: new Date().toISOString()
+    }).then((saved) => {
+      console.log('✅ Post saved to database');
+      if (saved && saved[0] && saved[0].id && justPosted) {
+        justPosted.dataset.adId = saved[0].id;
+      }
+    }).catch(err => {
+      console.warn('⚠️ Post save failed:', err.message);
+    });
   });
 
   adPostBtnRef.addEventListener('click', async () => {
