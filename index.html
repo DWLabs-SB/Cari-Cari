@@ -3889,106 +3889,10 @@
     if (e.target.classList.contains('directions-btn')) {
       const lat = parseFloat(e.target.dataset.lat);
       const lng = parseFloat(e.target.dataset.lng);
-      const itemName = e.target.closest('.feed-item').querySelector('.feed-user').textContent;
-
-      if (userLocation && lat && lng) {
-        const distance = calculateDistance(userLocation.lat, userLocation.lng, lat, lng);
-        const distanceStr = formatDistance(distance);
-        showToast(`📍 ${itemName} is ${distanceStr} away. Opening directions...`);
-
-        // Create modal with Google Maps and Waze options
-        const directionsModal = document.createElement('div');
-        directionsModal.style.cssText = `
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0,0,0,0.7);
-          display: flex;
-          align-items: flex-end;
-          z-index: 2000;
-        `;
-
-        directionsModal.innerHTML = `
-          <div style="
-            background: var(--card);
-            border-radius: 20px 20px 0 0;
-            width: 100%;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-          ">
-            <h3 style="margin-bottom: 8px; color: var(--text);">Choose Navigation App</h3>
-            <button id="open-gmaps-btn" style="
-              width: 100%;
-              padding: 14px;
-              background: #4285F4;
-              color: white;
-              border: none;
-              border-radius: 10px;
-              font-weight: 600;
-              cursor: pointer;
-              font-size: 0.95rem;
-            ">
-              🗺️ Google Maps
-            </button>
-            <button id="open-waze-btn" style="
-              width: 100%;
-              padding: 14px;
-              background: #34C759;
-              color: white;
-              border: none;
-              border-radius: 10px;
-              font-weight: 600;
-              cursor: pointer;
-              font-size: 0.95rem;
-            ">
-              🛣️ Waze
-            </button>
-            <button id="close-directions-modal" style="
-              width: 100%;
-              padding: 12px;
-              background: var(--input-bg);
-              color: var(--text);
-              border: 1px solid var(--input-border);
-              border-radius: 10px;
-              font-weight: 600;
-              cursor: pointer;
-              margin-top: 4px;
-            ">
-              Cancel
-            </button>
-          </div>
-        `;
-
-        document.body.appendChild(directionsModal);
-
-        // Google Maps URL
-        document.getElementById('open-gmaps-btn').addEventListener('click', () => {
-          const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
-          window.open(mapsUrl, '_blank');
-          directionsModal.remove();
-        });
-
-        // Waze URL
-        document.getElementById('open-waze-btn').addEventListener('click', () => {
-          const wazeUrl = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
-          window.open(wazeUrl, '_blank');
-          directionsModal.remove();
-        });
-
-        // Close modal
-        document.getElementById('close-directions-modal').addEventListener('click', () => {
-          directionsModal.remove();
-        });
-
-        // Close on background click
-        directionsModal.addEventListener('click', (evt) => {
-          if (evt.target === directionsModal) {
-            directionsModal.remove();
-          }
-        });
+      if (!isNaN(lat) && !isNaN(lng)) {
+        openDirections({ lat, lng });
       } else {
-        showToast('Could not get directions');
+        showToast('No location pinned for this ad');
       }
     }
   });
