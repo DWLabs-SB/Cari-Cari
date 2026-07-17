@@ -1201,15 +1201,6 @@
       <option value="product" id="catOptProduct">📦 Product</option>
       <option value="minimarket" id="catOptMinimarket">🏪 Minimarket (Kedai Runcit)</option>
     </select>
-    <div class="icon-btn" id="integrations-btn" title="Revenue Integrations">
-      💼
-    </div>
-    <div class="icon-btn" id="earnings-btn" title="My Earnings">
-      💰
-    </div>
-    <div class="icon-btn" id="parking-btn" title="Parking Payment">
-      🅿️
-    </div>
     <div class="icon-btn" id="language-toggle" title="Toggle language">
       <span id="lang-display">ENG</span>
     </div>
@@ -2455,31 +2446,6 @@
   // ===== ADMIN MODE (Hide Revenue from Normal Users) =====
   let isAdmin = false;
   
-  // Admin access: press Ctrl+Shift+A to toggle admin mode
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-      isAdmin = !isAdmin;
-      document.getElementById('integrations-btn').style.display = isAdmin ? 'flex' : 'none';
-      document.getElementById('earnings-btn').style.display = isAdmin ? 'flex' : 'none';
-      
-      // Hide sections if switching to user mode
-      if (!isAdmin) {
-        integrationsSection.style.display = 'none';
-        earningsSection.style.display = 'none';
-        feedContainer.style.display = 'block';
-      }
-      
-      const status = isAdmin ? '🔓 Admin Mode ON - Revenue Dashboard Unlocked' : '🔒 Admin Mode OFF - Revenue Hidden';
-      showToast(status);
-      console.log(status);
-    }
-  });
-
-  // Hide integrations and earnings buttons by default (admin only)
-  document.getElementById('integrations-btn').style.display = 'none';
-  document.getElementById('earnings-btn').style.display = 'none';
-
-
   // Build the Online Shopping buttons from the MERCHANTS list
   renderShoppingButtons();
 
@@ -2549,15 +2515,17 @@
   const integrationsBtn = document.getElementById('integrations-btn');
   const integrationsSection = document.getElementById('integrations-section');
 
-  integrationsBtn.addEventListener('click', () => {
-    if (!isAdmin) {
-      showToast('🔒 Admin access required (Ctrl+Shift+A)');
-      return;
-    }
-    const isVisible = integrationsSection.style.display === 'block';
-    integrationsSection.style.display = isVisible ? 'none' : 'block';
-    feedContainer.style.display = isVisible ? 'block' : 'none';
-  });
+  if (integrationsBtn) {
+    integrationsBtn.addEventListener('click', () => {
+      if (!isAdmin) {
+        showToast('🔒 Admin access required');
+        return;
+      }
+      const isVisible = integrationsSection.style.display === 'block';
+      integrationsSection.style.display = isVisible ? 'none' : 'block';
+      feedContainer.style.display = isVisible ? 'block' : 'none';
+    });
+  }
 
   // Tab switching
   document.querySelectorAll('.revenue-tab').forEach(tab => {
@@ -2778,15 +2746,17 @@
   const earningsBtn = document.getElementById('earnings-btn');
   const earningsSection = document.getElementById('earnings-section');
 
-  earningsBtn.addEventListener('click', () => {
-    if (!isAdmin) {
-      showToast('🔒 Admin access required (Ctrl+Shift+A)');
-      return;
-    }
-    const isVisible = earningsSection.style.display === 'block';
-    earningsSection.style.display = isVisible ? 'none' : 'block';
-    feedContainer.style.display = isVisible ? 'block' : 'none';
-  });
+  if (earningsBtn) {
+    earningsBtn.addEventListener('click', () => {
+      if (!isAdmin) {
+        showToast('🔒 Admin access required');
+        return;
+      }
+      const isVisible = earningsSection.style.display === 'block';
+      earningsSection.style.display = isVisible ? 'none' : 'block';
+      feedContainer.style.display = isVisible ? 'block' : 'none';
+    });
+  }
 
   // Withdraw earnings
   document.getElementById('withdraw-btn').addEventListener('click', () => {
@@ -2913,11 +2883,13 @@
   const parkingSection = document.getElementById('parking-section');
   const feedContainer = document.getElementById('feed-container');
 
-  parkingBtn.addEventListener('click', () => {
-    const isVisible = parkingSection.style.display === 'block';
-    parkingSection.style.display = isVisible ? 'none' : 'block';
-    feedContainer.style.display = isVisible ? 'block' : 'none';
-  });
+  if (parkingBtn && parkingSection) {
+    parkingBtn.addEventListener('click', () => {
+      const isVisible = parkingSection.style.display === 'block';
+      parkingSection.style.display = isVisible ? 'none' : 'block';
+      feedContainer.style.display = isVisible ? 'block' : 'none';
+    });
+  }
 
   // Parking calculation
   document.getElementById('calc-parking-btn').addEventListener('click', () => {
