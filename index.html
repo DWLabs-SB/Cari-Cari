@@ -1067,17 +1067,37 @@
   <div id="resetScreen" class="auth-screen">
     <div class="auth-form">
       <h2>Reset Password</h2>
-      <input type="tel" id="resetPhone" class="auth-input" placeholder="Your phone number">
-      <button class="auth-btn" onclick="lookupSecurityQuestion()" id="resetLookupBtn">Continue</button>
-      <div id="resetQuestionArea" style="display:none;">
-        <div id="resetQuestionText" style="color:var(--text); margin:12px 0 8px; font-weight:600;"></div>
-        <input type="text" id="resetAnswer" class="auth-input" placeholder="Your answer">
-        <input type="password" id="resetNewPassword" class="auth-input" placeholder="New password">
-        <input type="password" id="resetConfirmPassword" class="auth-input" placeholder="Confirm new password">
-        <button class="auth-btn" onclick="doPasswordReset()">Reset Password</button>
+
+      <!-- Method chooser -->
+      <div id="resetChooser">
+        <p style="color:var(--text-sub); font-size:0.85rem; margin-bottom:12px;">How did you sign up?</p>
+        <button class="auth-btn" onclick="chooseResetMethod('email')">📧 Reset by Email</button>
+        <button class="auth-btn" onclick="chooseResetMethod('phone')" style="background:var(--input-bg); color:var(--text); border:1px solid var(--input-border);">📱 Reset by Phone Number</button>
       </div>
+
+      <!-- EMAIL reset path -->
+      <div id="resetEmailArea" style="display:none;">
+        <p style="color:var(--text-sub); font-size:0.85rem; margin-bottom:10px;">Enter your email and we'll send you a reset link.</p>
+        <input type="email" id="resetEmail" class="auth-input" placeholder="Your email address">
+        <button class="auth-btn" onclick="sendEmailReset()" id="resetEmailBtn">Send Reset Link</button>
+      </div>
+
+      <!-- PHONE reset path (security question) -->
+      <div id="resetPhoneArea" style="display:none;">
+        <p style="color:var(--text-sub); font-size:0.85rem; margin-bottom:10px;">Enter your phone number to answer your security question.</p>
+        <input type="tel" id="resetPhone" class="auth-input" placeholder="Your phone number">
+        <button class="auth-btn" onclick="lookupSecurityQuestion()" id="resetLookupBtn">Continue</button>
+        <div id="resetQuestionArea" style="display:none;">
+          <div id="resetQuestionText" style="color:var(--text); margin:12px 0 8px; font-weight:600;"></div>
+          <input type="text" id="resetAnswer" class="auth-input" placeholder="Your answer">
+          <input type="password" id="resetNewPassword" class="auth-input" placeholder="New password">
+          <input type="password" id="resetConfirmPassword" class="auth-input" placeholder="Confirm new password">
+          <button class="auth-btn" onclick="doPasswordReset()">Reset Password</button>
+        </div>
+      </div>
+
       <div id="resetError" class="auth-error" style="display:none;"></div>
-      <div id="resetInfo" style="font-size:0.8rem; color:var(--text-sub);">Email users: password reset by email isn't set up yet — contact support.</div>
+      <div id="resetSuccess" style="display:none; color:#2e9e5b; font-size:0.85rem; margin-top:8px;"></div>
       <span class="auth-link" onclick="showSignIn()">Back to Sign In</span>
     </div>
   </div>
@@ -1548,27 +1568,10 @@
     </div>
   </div>
 
-  <!-- QUICK SERVICES FOR USERS -->
+  <!-- ONLINE SHOPPING (AFFILIATE) -->
   <div style="margin-bottom: 20px;">
-    <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub); margin-bottom: 10px;">Quick Services</div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;">
-      <button id="order-grab-btn" style="padding: 12px 8px; background: #2DB637; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-        <span style="font-size: 1.2rem;">🚗</span>
-        <span>Order Grab</span>
-      </button>
-      <button id="shop-lazada-btn" style="padding: 12px 8px; background: #FF6000; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-        <span style="font-size: 1.2rem;">🛍️</span>
-        <span>Lazada</span>
-      </button>
-      <button id="shop-shopee-btn" style="padding: 12px 8px; background: #EE2E2E; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-        <span style="font-size: 1.2rem;">🛒</span>
-        <span>Shopee</span>
-      </button>
-      <button id="topup-tng-user-btn" style="padding: 12px 8px; background: #0055CC; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-        <span style="font-size: 1.2rem;">📱</span>
-        <span>Touch n Go</span>
-      </button>
-    </div>
+    <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub); margin-bottom: 10px;">Online Shopping</div>
+    <div id="shopping-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;"></div>
     <div style="font-size:0.68rem; color:var(--text-sub); margin-top:8px; text-align:center;">Contains affiliate links — Cari-Cari may earn a small commission at no extra cost to you.</div>
   </div>
 
@@ -1673,27 +1676,40 @@
   // Declared early because addFeedItem (used for sample ads at startup) references it
   let currentUser = null;
 
-  // ===== AFFILIATE LINKS =====
-  // Paste your real affiliate tracking links here once you have them.
-  // Until then, buttons open the normal sites (no commission earned).
-  // Get links: Lazada/Shopee via Involve Asia (involve.asia) or Shopee's own
-  // dashboard (affiliate.shopee.com.my). Grab via its partner program.
-  const AFFILIATE_LINKS = {
-    grab:   '',   // e.g. 'https://grab.onelink.me/....?your_tracking'
-    lazada: '',   // e.g. your Involve Asia Lazada deep link
-    shopee: '',   // e.g. your Shopee affiliate link
-    tng:    ''    // Touch n Go (usually no affiliate program — leave blank)
-  };
-  // Fallback URLs used when no affiliate link is set yet
-  const AFFILIATE_FALLBACK = {
-    grab:   'https://www.grab.com/my/',
-    lazada: 'https://www.lazada.com.my',
-    shopee: 'https://shopee.com.my',
-    tng:    'https://www.touchngo.com.my/'
-  };
+  // ===== ONLINE SHOPPING (AFFILIATE MERCHANTS) =====
+  // Add your affiliate tracking link to each merchant as you get approved.
+  // Leave 'link' empty to open the normal site (no commission). Set enabled:false to hide a button.
+  // Most Malaysian programs are via Involve Asia (involve.asia); Shopee also has affiliate.shopee.com.my.
+  const MERCHANTS = [
+    { key:'lazada',   name:'Lazada',      emoji:'🛍️', color:'#FF6000', enabled:true,  link:'', fallback:'https://www.lazada.com.my' },
+    { key:'shopee',   name:'Shopee',      emoji:'🛒', color:'#EE2E2E', enabled:true,  link:'', fallback:'https://shopee.com.my' },
+    { key:'zalora',   name:'Zalora',      emoji:'👗', color:'#111111', enabled:true,  link:'', fallback:'https://www.zalora.com.my' },
+    { key:'watsons',  name:'Watsons',     emoji:'💊', color:'#00A9CE', enabled:true,  link:'', fallback:'https://www.watsons.com.my' },
+    { key:'agoda',    name:'Agoda',       emoji:'🏨', color:'#5C2D91', enabled:true,  link:'', fallback:'https://www.agoda.com' },
+    { key:'aliexpress', name:'AliExpress',emoji:'📦', color:'#E62E04', enabled:true,  link:'', fallback:'https://www.aliexpress.com' },
+    { key:'taobao',   name:'Taobao',      emoji:'🧧', color:'#FF4200', enabled:true,  link:'', fallback:'https://world.taobao.com' }
+  ];
   function openAffiliate(key) {
-    const url = AFFILIATE_LINKS[key] || AFFILIATE_FALLBACK[key];
-    window.open(url, '_blank', 'noopener');
+    const m = MERCHANTS.find(x => x.key === key);
+    if (!m) return;
+    window.open(m.link || m.fallback, '_blank', 'noopener');
+  }
+  // Build the shopping buttons from the list above
+  function renderShoppingButtons() {
+    const grid = document.getElementById('shopping-grid');
+    if (!grid) return;
+    grid.innerHTML = MERCHANTS.filter(m => m.enabled).map(m => `
+      <button data-merchant="${m.key}" style="padding:14px 8px; background:${m.color}; color:white; border:none; border-radius:10px; font-weight:600; cursor:pointer; font-size:0.82rem; display:flex; flex-direction:column; align-items:center; gap:4px;">
+        <span style="font-size:1.3rem;">${m.emoji}</span>
+        <span>${m.name}</span>
+      </button>
+    `).join('');
+    grid.querySelectorAll('button[data-merchant]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        openAffiliate(btn.dataset.merchant);
+        showToast(`Opening ${MERCHANTS.find(m=>m.key===btn.dataset.merchant).name}...`);
+      });
+    });
   }
 
   // ===== ADD TO HOME SCREEN =====
@@ -2365,284 +2381,10 @@
   document.getElementById('integrations-btn').style.display = 'none';
   document.getElementById('earnings-btn').style.display = 'none';
 
-  // ===== USER SERVICES (Non-Admin) =====
-  
-  // 1. ORDER GRAB (Ride/Food)
-  document.getElementById('order-grab-btn').addEventListener('click', () => {
-    const grabModal = document.createElement('div');
-    grabModal.style.cssText = `
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
-      display: flex;
-      align-items: flex-end;
-      z-index: 2000;
-    `;
 
-    grabModal.innerHTML = `
-      <div style="
-        background: var(--card);
-        border-radius: 20px 20px 0 0;
-        width: 100%;
-        padding: 24px;
-      ">
-        <h2 style="color: var(--text); margin-bottom: 16px;">🚗 Grab Services</h2>
-        
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <button id="grab-ride-btn" style="
-            width: 100%;
-            padding: 14px;
-            background: #2DB637;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.95rem;
-          ">
-            🚕 Book Grab Ride
-          </button>
-          
-          <button id="grab-food-btn" style="
-            width: 100%;
-            padding: 14px;
-            background: #2DB637;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.95rem;
-          ">
-            🍔 Order Food (GrabFood)
-          </button>
+  // Build the Online Shopping buttons from the MERCHANTS list
+  renderShoppingButtons();
 
-          <button id="grab-delivery-btn" style="
-            width: 100%;
-            padding: 14px;
-            background: #2DB637;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.95rem;
-          ">
-            📦 Grab Delivery
-          </button>
-
-          <button id="close-grab-modal" style="
-            width: 100%;
-            padding: 12px;
-            background: var(--input-bg);
-            color: var(--text);
-            border: 1px solid var(--input-border);
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-          ">
-            Cancel
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(grabModal);
-
-    // Grab Ride
-    document.getElementById('grab-ride-btn').addEventListener('click', () => {
-      openAffiliate('grab');
-      grabModal.remove();
-      showToast('🚗 Opening Grab Ride...');
-    });
-
-    // Grab Food
-    document.getElementById('grab-food-btn').addEventListener('click', () => {
-      openAffiliate('grab');
-      grabModal.remove();
-      showToast('🍔 Opening GrabFood...');
-    });
-
-    // Grab Delivery
-    document.getElementById('grab-delivery-btn').addEventListener('click', () => {
-      openAffiliate('grab');
-      grabModal.remove();
-      showToast('📦 Opening Grab Delivery...');
-    });
-
-    document.getElementById('close-grab-modal').addEventListener('click', () => {
-      grabModal.remove();
-    });
-  });
-
-  // 2. SHOP ON LAZADA
-  document.getElementById('shop-lazada-btn').addEventListener('click', () => {
-    openAffiliate('lazada');
-    showToast('🛍️ Opening Lazada...');
-  });
-
-  // 3. SHOP ON SHOPEE
-  document.getElementById('shop-shopee-btn').addEventListener('click', () => {
-    openAffiliate('shopee');
-    showToast('🛒 Opening Shopee...');
-  });
-
-  // 4. TOP-UP TOUCH N GO (FOR USERS)
-  document.getElementById('topup-tng-user-btn').addEventListener('click', () => {
-    const tngModal = document.createElement('div');
-    tngModal.style.cssText = `
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    `;
-
-    tngModal.innerHTML = `
-      <div style="
-        background: var(--card);
-        border-radius: 16px;
-        padding: 24px;
-        max-width: 320px;
-        width: 90%;
-      ">
-        <h3 style="color: var(--text); margin-bottom: 16px; text-align: center;">📱 Touch 'n Go Top-up</h3>
-        
-        <input type="number" id="user-tng-amount" placeholder="Amount (RM)" min="10" max="500" value="50" style="
-          width: 100%;
-          padding: 12px;
-          border-radius: 10px;
-          border: 1px solid var(--input-border);
-          background: var(--input-bg);
-          color: var(--text);
-          margin-bottom: 16px;
-          box-sizing: border-box;
-        ">
-
-        <input type="text" id="user-tng-card" placeholder="Card No. (last 4 digits)" maxlength="4" style="
-          width: 100%;
-          padding: 12px;
-          border-radius: 10px;
-          border: 1px solid var(--input-border);
-          background: var(--input-bg);
-          color: var(--text);
-          margin-bottom: 16px;
-          box-sizing: border-box;
-        ">
-
-        <button id="confirm-tng-topup" style="
-          width: 100%;
-          padding: 12px;
-          background: #0055CC;
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-weight: 600;
-          cursor: pointer;
-          margin-bottom: 8px;
-        ">
-          Top-up Now
-        </button>
-
-        <button id="cancel-tng-modal" style="
-          width: 100%;
-          padding: 12px;
-          background: var(--input-bg);
-          color: var(--text);
-          border: 1px solid var(--input-border);
-          border-radius: 10px;
-          font-weight: 600;
-          cursor: pointer;
-        ">
-          Cancel
-        </button>
-      </div>
-    `;
-
-    document.body.appendChild(tngModal);
-
-    document.getElementById('confirm-tng-topup').addEventListener('click', () => {
-      const amount = parseInt(document.getElementById('user-tng-amount').value);
-      const cardNo = document.getElementById('user-tng-card').value;
-
-      if (!amount || amount < 10 || amount > 500) {
-        showToast('Enter amount between 10-500 RM');
-        return;
-      }
-
-      if (!cardNo || cardNo.length !== 4) {
-        showToast('Enter last 4 digits of your card');
-        return;
-      }
-
-      // Process payment
-      showToast('Processing Touch n Go top-up...');
-      setTimeout(() => {
-        tngModal.remove();
-        
-        // Show success modal
-        const successModal = document.createElement('div');
-        successModal.style.cssText = `
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0,0,0,0.7);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2000;
-        `;
-
-        successModal.innerHTML = `
-          <div style="
-            background: var(--card);
-            border-radius: 16px;
-            padding: 24px;
-            max-width: 320px;
-            width: 90%;
-            text-align: center;
-          ">
-            <div style="font-size: 2.5rem; margin-bottom: 12px;">✅</div>
-            <h3 style="color: var(--text); margin-bottom: 8px;">Top-up Successful</h3>
-            <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 16px;">
-              <strong style="color: var(--accent); font-size: 1.1rem;">${amount} RM</strong><br>
-              Added to card ending in ${cardNo}
-            </p>
-            <button id="close-tng-success" style="
-              width: 100%;
-              padding: 12px;
-              background: var(--accent);
-              color: var(--accent-text);
-              border: none;
-              border-radius: 10px;
-              font-weight: 600;
-              cursor: pointer;
-            ">
-              Done
-            </button>
-          </div>
-        `;
-
-        document.body.appendChild(successModal);
-
-        document.getElementById('close-tng-success').addEventListener('click', () => {
-          successModal.remove();
-          
-          // Track commission if admin enabled it
-          if (isAdmin) {
-            const commission = amount * 0.03;
-            addIntegrationEarning('tng', amount, commission);
-            console.log(`Touch n Go earning tracked: ${commission.toFixed(2)} RM`);
-          }
-        });
-      }, 1500);
-    });
-
-    document.getElementById('cancel-tng-modal').addEventListener('click', () => {
-      tngModal.remove();
-    });
-  });
   const integrationsBtn = document.getElementById('integrations-btn');
   const integrationsSection = document.getElementById('integrations-section');
 
@@ -4246,6 +3988,24 @@
       });
       return response.json();
     },
+
+    // Send a password-reset email via Supabase Auth
+    async sendPasswordResetEmail(email) {
+      const url = `${this.url}/auth/v1/recover`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': this.key,
+        },
+        body: JSON.stringify({
+          email,
+          // Where the reset link brings the user back to
+          options: { redirectTo: 'https://www.cari-cari.my' }
+        })
+      });
+      return response.ok;
+    },
     
     async insertUser(userData) {
       const response = await this.request('/users', {
@@ -4595,10 +4355,54 @@
     document.getElementById('signInScreen').classList.remove('active');
     document.getElementById('signUpScreen').classList.remove('active');
     document.getElementById('resetScreen').classList.add('active');
-    document.getElementById('resetPhone').value = '';
+    // Reset to the chooser
+    document.getElementById('resetChooser').style.display = 'block';
+    document.getElementById('resetEmailArea').style.display = 'none';
+    document.getElementById('resetPhoneArea').style.display = 'none';
     document.getElementById('resetQuestionArea').style.display = 'none';
     document.getElementById('resetError').style.display = 'none';
+    document.getElementById('resetSuccess').style.display = 'none';
+    const rp = document.getElementById('resetPhone'); if (rp) rp.value = '';
+    const re = document.getElementById('resetEmail'); if (re) re.value = '';
     resetUserRecord = null;
+  }
+
+  function chooseResetMethod(method) {
+    document.getElementById('resetChooser').style.display = 'none';
+    document.getElementById('resetError').style.display = 'none';
+    document.getElementById('resetSuccess').style.display = 'none';
+    if (method === 'email') {
+      document.getElementById('resetEmailArea').style.display = 'block';
+      document.getElementById('resetPhoneArea').style.display = 'none';
+    } else {
+      document.getElementById('resetPhoneArea').style.display = 'block';
+      document.getElementById('resetEmailArea').style.display = 'none';
+    }
+  }
+
+  async function sendEmailReset() {
+    const email = document.getElementById('resetEmail').value.trim();
+    const errorDiv = document.getElementById('resetError');
+    const successDiv = document.getElementById('resetSuccess');
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+    if (!email || !email.includes('@')) {
+      errorDiv.textContent = 'Enter a valid email address';
+      errorDiv.style.display = 'block';
+      return;
+    }
+    const btn = document.getElementById('resetEmailBtn');
+    btn.disabled = true; btn.textContent = '⏳ Sending...';
+    try {
+      await supabaseClient.sendPasswordResetEmail(email);
+      // Always show success (don't reveal whether an email exists — privacy best practice)
+      successDiv.textContent = '✅ If that email is registered, a reset link has been sent. Check your inbox (and spam).';
+      successDiv.style.display = 'block';
+    } catch (err) {
+      successDiv.textContent = '✅ If that email is registered, a reset link has been sent. Check your inbox (and spam).';
+      successDiv.style.display = 'block';
+    }
+    btn.disabled = false; btn.textContent = 'Send Reset Link';
   }
 
   async function lookupSecurityQuestion() {
@@ -5010,6 +4814,8 @@
   window.handleSignIn = handleSignIn;
   window.handleSignUp = handleSignUp;
   window.showReset = showReset;
+  window.chooseResetMethod = chooseResetMethod;
+  window.sendEmailReset = sendEmailReset;
   window.lookupSecurityQuestion = lookupSecurityQuestion;
   window.doPasswordReset = doPasswordReset;
 
