@@ -1040,7 +1040,10 @@
   </div>
 
   <div class="landing-footer" id="landingFooter">
-    <p>Join thousands of local sellers in Sabah & Malaysia • Completely Free</p>
+  </div>
+  <div style="text-align:center; padding:16px 0; color:var(--text-sub); font-size:0.72rem; line-height:1.6;">
+    Created by <b style="color:var(--accent);">DW Labs</b>, Kota Kinabalu<br>
+    cari-cari.my · © 2026 All rights reserved
   </div>
 </div>
 
@@ -1577,6 +1580,12 @@
 
   <!-- FEED -->
   <div id="feed-container"></div>
+
+  <!-- FOOTER -->
+  <div style="text-align:center; padding:24px 0 12px; color:var(--text-sub); font-size:0.72rem; line-height:1.6;">
+    Created by <b style="color:var(--accent);">DW Labs</b>, Kota Kinabalu<br>
+    cari-cari.my · © 2026 All rights reserved
+  </div>
 
 </div>
 
@@ -4424,7 +4433,7 @@
       landingSubheading: 'Make your business known',
       landingDescription: 'Cari-Cari connects local businesses with their community. Share what you sell, showcase your services, and reach customers searching for exactly what you offer — all from your phone.',
       landingCTA: 'Get Started',
-      landingFooter: 'Join thousands of local sellers in Sabah & Malaysia • Completely Free',
+      landingFooter: '',
       signIn: 'Sign In',
       signUp: 'Create Account',
       email: 'Email address',
@@ -4446,7 +4455,7 @@
       landingSubheading: 'Kenalkan bisnes anda',
       landingDescription: 'Cari-Cari menghubungkan perniagaan tempatan dengan komuniti mereka. Kongsikan apa yang anda jual, tunjukkan perkhidmatan anda, dan capai pelanggan yang mencari apa yang anda tawarkan — semuanya dari telefon anda.',
       landingCTA: 'Mulai Sekarang',
-      landingFooter: 'Sertai ribuan penjual tempatan di Sabah & Malaysia • Sepenuhnya Percuma',
+      landingFooter: '',
       signIn: 'Masuk',
       signUp: 'Buat Akaun',
       email: 'Alamat email',
@@ -4468,7 +4477,7 @@
       landingSubheading: '让你的生意众所周知',
       landingDescription: 'Cari-Cari连接本地企业与他们的社区。分享你销售的产品，展示你的服务，并接触正在寻找你提供的东西的客户——一切都在你的手机上。',
       landingCTA: '开始',
-      landingFooter: '加入数千名沙巴和马来西亚的本地卖家 • 完全免费',
+      landingFooter: '',
       signIn: '登录',
       signUp: '创建账户',
       email: '电子邮件地址',
@@ -4516,6 +4525,8 @@
     document.getElementById('signUpScreen').classList.remove('active');
     const rs = document.getElementById('resetScreen');
     if (rs) rs.classList.remove('active');
+    const ts = document.getElementById('termsScreen');
+    if (ts) ts.classList.remove('active');
     document.getElementById('signInScreen').classList.add('active');
     document.getElementById('signInTitle').textContent = t('signIn');
     document.getElementById('signInEmail').placeholder = t('emailOrPhone');
