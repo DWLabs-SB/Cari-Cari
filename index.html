@@ -1345,21 +1345,21 @@
         <span style="font-size: 0.85rem;">Boost this ad</span>
       </div>
       <div class="composer-boost-tiers" id="composer-boost-tiers">
-        <div class="composer-boost-tier" data-cost="10" data-label="3 hours">
-          <div class="boost-tier-label">⏰ 3h</div>
-          <div class="boost-tier-cost">10 credits</div>
-        </div>
-        <div class="composer-boost-tier" data-cost="20" data-label="1 day">
+        <div class="composer-boost-tier" data-cost="50" data-days="1" data-label="1 day">
           <div class="boost-tier-label">📅 1 day</div>
-          <div class="boost-tier-cost">20 credits</div>
+          <div class="boost-tier-cost">50 credits</div>
         </div>
-        <div class="composer-boost-tier" data-cost="40" data-label="3 days">
+        <div class="composer-boost-tier" data-cost="150" data-days="3" data-label="3 days">
           <div class="boost-tier-label">📅 3 days</div>
-          <div class="boost-tier-cost">40 credits</div>
+          <div class="boost-tier-cost">150 credits</div>
         </div>
-        <div class="composer-boost-tier" data-cost="70" data-label="1 week">
-          <div class="boost-tier-label">📅 1 week</div>
-          <div class="boost-tier-cost">70 credits</div>
+        <div class="composer-boost-tier" data-cost="350" data-days="7" data-label="7 days">
+          <div class="boost-tier-label">📅 7 days</div>
+          <div class="boost-tier-cost">350 credits</div>
+        </div>
+        <div class="composer-boost-tier" data-cost="500" data-days="10" data-label="10 days">
+          <div class="boost-tier-label">📅 10 days</div>
+          <div class="boost-tier-cost">500 credits</div>
         </div>
       </div>
 
@@ -1606,21 +1606,21 @@
   <div class="modal-content">
     <h2 style="margin-bottom:16px;">🚀 Boost this post</h2>
     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
-      <div class="boost-tier" data-cost="10" data-label="3 hours">
-        <div class="boost-tier-label">⏰ 3 hours</div>
-        <div class="boost-tier-cost">10 credits</div>
-      </div>
-      <div class="boost-tier" data-cost="20" data-label="1 day">
+      <div class="boost-tier" data-cost="50" data-days="1" data-label="1 day">
         <div class="boost-tier-label">📅 1 day</div>
-        <div class="boost-tier-cost">20 credits</div>
+        <div class="boost-tier-cost">50 credits</div>
       </div>
-      <div class="boost-tier" data-cost="40" data-label="3 days">
+      <div class="boost-tier" data-cost="150" data-days="3" data-label="3 days">
         <div class="boost-tier-label">📅 3 days</div>
-        <div class="boost-tier-cost">40 credits</div>
+        <div class="boost-tier-cost">150 credits</div>
       </div>
-      <div class="boost-tier" data-cost="70" data-label="1 week">
-        <div class="boost-tier-label">📅 1 week</div>
-        <div class="boost-tier-cost">70 credits</div>
+      <div class="boost-tier" data-cost="350" data-days="7" data-label="7 days">
+        <div class="boost-tier-label">📅 7 days</div>
+        <div class="boost-tier-cost">350 credits</div>
+      </div>
+      <div class="boost-tier" data-cost="500" data-days="10" data-label="10 days">
+        <div class="boost-tier-label">📅 10 days</div>
+        <div class="boost-tier-cost">500 credits</div>
       </div>
     </div>
     <button class="boost-confirm-btn" id="boost-confirm-btn" disabled>Select a duration</button>
@@ -1769,10 +1769,9 @@
   };
   // Credit packages users can buy
   const CREDIT_PACKAGES = [
-    { credits: 100,  price: 5 },
-    { credits: 250,  price: 10 },
-    { credits: 600,  price: 20 },
-    { credits: 1500, price: 45 }
+    { credits: 200,  price: 10 },
+    { credits: 550,  price: 20 },
+    { credits: 1300, price: 45 }
   ];
 
   // ===== ONLINE SHOPPING (AFFILIATE MERCHANTS) =====
@@ -3253,6 +3252,7 @@
   let composerBoostOn = false;
   let composerBoostCost = 0;
   let composerBoostLabel = '';
+  let composerBoostDays = 0;
 
   const composerBoostToggleEl = document.getElementById('composer-boost-toggle');
   const composerBoostSwitch = document.getElementById('composer-boost-switch');
@@ -3266,6 +3266,7 @@
     if (!composerBoostOn) {
       composerBoostCost = 0;
       composerBoostLabel = '';
+      composerBoostDays = 0;
       document.querySelectorAll('.composer-boost-tier').forEach(t => t.classList.remove('selected'));
     }
     updatePostCostNote();
@@ -3278,16 +3279,19 @@
       tier.classList.add('selected');
       composerBoostCost = parseInt(tier.dataset.cost);
       composerBoostLabel = tier.dataset.label;
+      composerBoostDays = parseInt(tier.dataset.days) || 0;
       updatePostCostNote();
     });
   });
 
   function updatePostCostNote() {
-    const base = 5;
+    const base = 10;
     const total = base + (composerBoostOn ? composerBoostCost : 0);
-    postCostNote.textContent = composerBoostOn && composerBoostCost
-      ? `This will use ${total} credits (5 post + ${composerBoostCost} boost)`
-      : 'This will use 5 credits';
+    if (composerBoostOn && composerBoostCost) {
+      postCostNote.textContent = `This will use ${total} credits (10 post + ${composerBoostCost} boost) — shown in carousel for ${composerBoostDays} day${composerBoostDays>1?'s':''}`;
+    } else {
+      postCostNote.textContent = 'This will use 10 credits — your ad stays for 2 days';
+    }
   }
 
   // ===== STATE =====
@@ -3687,9 +3691,12 @@
 
   adPostBtnRef.addEventListener('click', async () => {
     const isAdTab = adTab.classList.contains('active');
-    const adCost = 5;
+    const adCost = 10;
     const boostCost = (isAdTab && composerBoostOn) ? composerBoostCost : 0;
     const totalCost = adCost + boostCost;
+    // Lifespan: boosted ads live for the boosted days; normal ads live 2 days
+    const boostDays = (isAdTab && composerBoostOn && composerBoostDays) ? composerBoostDays : 0;
+    const lifespanDays = boostDays > 0 ? boostDays : 2;
 
     if (!selectedCategory) {
       postCostNote.textContent = 'Select a category first';
@@ -3801,7 +3808,8 @@
       photos: photoUrls,
       boosted: boostCost > 0,
       boost_label: boostCost > 0 ? composerBoostLabel : null,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + lifespanDays * 24 * 60 * 60 * 1000).toISOString()
     }).then((saved) => {
       console.log('✅ Ad saved to database');
       // Attach the new DB id to the feed item so its reactions/comments persist
@@ -4207,8 +4215,10 @@
     },
 
     async getAds() {
-      // Newest first
-      const response = await this.request('/advertisements?order=created_at.desc');
+      // Newest first; exclude ads whose expiry has passed (or that have no expiry set)
+      const nowIso = new Date().toISOString();
+      const q = `/advertisements?order=created_at.desc&or=(expires_at.gt.${nowIso},expires_at.is.null)`;
+      const response = await this.request(q);
       if (!response.ok) return [];
       return response.json();
     },
