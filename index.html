@@ -4031,10 +4031,12 @@
         if (!confirm('Delete this ad? This cannot be undone.')) return;
         deleteBtn.disabled = true;
         try {
-          const ok = await supabaseClient.deleteAd(item.dataset.adId);
+          const adId = item.dataset.adId;
+          // Clean up the ad's photos from R2 first (best-effort), then delete the row
+          await deleteAdPhotos(adId);
+          const ok = await supabaseClient.deleteAd(adId);
           if (ok) {
             // Remove from feed
-            const adId = item.dataset.adId;
             item.remove();
             // Also remove the matching boosted carousel card, if any
             const card = document.querySelector(`#boosted-carousel .carousel-card[data-ad-id="${adId}"]`);
