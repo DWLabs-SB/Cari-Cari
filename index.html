@@ -1016,6 +1016,27 @@
 </head>
 <body>
 
+<!-- INTRO CHOICE SCREEN (shown first) -->
+<div id="introChoice" style="position:fixed; inset:0; z-index:5000; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px; text-align:center;">
+  <div style="font-size:1.6rem; margin-bottom:6px;">🌟</div>
+  <div style="font-size:1.4rem; font-weight:700; color:var(--text); margin-bottom:4px;">Cari-Cari</div>
+  <div style="color:var(--text-sub); font-size:0.9rem; margin-bottom:30px;" id="introSubtitle">What brings you here today?</div>
+
+  <div style="display:flex; flex-direction:column; gap:16px; width:100%; max-width:320px;">
+    <button onclick="chooseIntro('seller')" style="padding:22px; border-radius:18px; border:2px solid var(--accent); background:var(--accent); color:var(--accent-text); cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.15);">
+      <div style="font-family:'Segoe Script','Brush Script MT',cursive; font-size:1.7rem; font-weight:600; margin-bottom:4px;">Saya menjual</div>
+      <div style="font-size:0.85rem; opacity:0.85;">I'm selling — advertise my business</div>
+    </button>
+    <button onclick="chooseIntro('searcher')" style="padding:22px; border-radius:18px; border:2px solid var(--accent); background:transparent; color:var(--text); cursor:pointer;">
+      <div style="font-family:'Segoe Script','Brush Script MT',cursive; font-size:1.7rem; font-weight:600; margin-bottom:4px; color:var(--accent);">Saya mencari</div>
+      <div style="font-size:0.85rem; color:var(--text-sub);">I'm searching — find eateries, services & more</div>
+    </button>
+  </div>
+
+  <div style="margin-top:24px; font-size:0.78rem; color:var(--text-sub);">You can always do both later 😊</div>
+</div>
+
+<!-- LANDING PAGE -->
 <div id="landingPage" class="landing-page">
   <div class="landing-header">
     <div class="landing-logo">🌟 Cari-Cari</div>
@@ -1053,6 +1074,7 @@
   <!-- SIGN IN SCREEN -->
   <div id="signInScreen" class="auth-screen active">
     <div class="auth-form">
+      <button onclick="backToIntro()" style="align-self:flex-start; background:none; border:none; color:var(--text-sub); font-size:0.9rem; cursor:pointer; padding:0; margin-bottom:8px;">← Back</button>
       <h2 id="signInTitle">Sign In</h2>
       <input type="text" id="signInEmail" class="auth-input" placeholder="Email or phone number">
       <input type="password" id="signInPassword" class="auth-input" placeholder="Password">
@@ -1166,6 +1188,7 @@
   <!-- SIGN UP SCREEN -->
   <div id="signUpScreen" class="auth-screen">
     <div class="auth-form">
+      <button onclick="showSignIn()" style="align-self:flex-start; background:none; border:none; color:var(--text-sub); font-size:0.9rem; cursor:pointer; padding:0; margin-bottom:8px;">← Back</button>
       <h2 id="signUpTitle">Create Account</h2>
       <input type="text" id="signUpName" class="auth-input" placeholder="Full Name">
       <input type="tel" id="signUpPhone" class="auth-input" placeholder="Phone Number">
@@ -4550,6 +4573,27 @@
     console.log('📱 Transitioning to auth...');
   }
 
+  // Intro choice: seller vs searcher (personalization only — everyone can do both)
+  let userIntent = null;
+  function chooseIntro(intent) {
+    userIntent = intent;
+    localStorage.setItem('cariCariIntent', intent);
+    const intro = document.getElementById('introChoice');
+    if (intro) intro.style.display = 'none';
+    // Both go to sign in / sign up; intent shapes their first view after login
+    proceedToAuth();
+  }
+  // Skip the intro if they've already chosen before (returning visitor)
+  (function initIntro() {
+    const saved = localStorage.getItem('cariCariIntent');
+    const savedUser = localStorage.getItem('cariCariCurrentUser');
+    if (saved || savedUser) {
+      const intro = document.getElementById('introChoice');
+      if (intro) intro.style.display = 'none';
+      userIntent = saved || null;
+    }
+  })();
+
   function showSignIn() {
     document.getElementById('signUpScreen').classList.remove('active');
     const rs = document.getElementById('resetScreen');
@@ -4756,6 +4800,20 @@
     loadCreditsAndSettings();
     refreshAdminButtonVisibility();
     console.log('🎉 App loaded for user:', currentUser.name);
+    // Personalize first view based on intro choice (both can still do everything)
+    const intent = userIntent || localStorage.getItem('cariCariIntent');
+    setTimeout(() => {
+      if (intent === 'seller') {
+        // Nudge sellers toward posting: focus the composer
+        const composer = document.querySelector('.composer');
+        const postTab = document.getElementById('postTabLabel');
+        if (postTab) postTab.click();
+        if (composer) composer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast('Ready to advertise? Post your ad below 👇');
+      } else if (intent === 'searcher') {
+        showToast('Browse whats near you — tap Nearby or search a category 🔍');
+      }
+    }, 600);
   }
 
   // Load the user's real credit balance from the database
@@ -5273,6 +5331,14 @@
 
   // Expose handlers for inline onclick/onchange in the HTML
   window.proceedToAuth = proceedToAuth;
+  window.chooseIntro = chooseIntro;
+  window.backToIntro = backToIntro;
+
+  function backToIntro() {
+    document.getElementById('authContainer').classList.add('hidden');
+    const intro = document.getElementById('introChoice');
+    if (intro) intro.style.display = 'flex';
+  }
   window.changeLandingLanguage = changeLandingLanguage;
   window.showSignIn = showSignIn;
   window.showSignUp = showSignUp;
