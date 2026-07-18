@@ -1256,14 +1256,14 @@
       </div>
       <div class="hiw-row">
         <div class="hiw-dot"></div>
-        <div id="hiw-step7">Posting ads: <strong>5 Credits</strong> · Boosting: 3hr <strong>10</strong>, 1 day <strong>20</strong>, 3 days <strong>40</strong>, 1 week <strong>70</strong></div>
+        <div id="hiw-step7">Posting ads: <strong>10 Credits</strong> (stays 1 week) · Boosting to carousel: <strong>50 Credits per day</strong> (e.g. 500 credits = 10 days)</div>
       </div>
     </div>
   </div>
 
   <!-- CREDITS + BUY -->
   <div class="top-bar">
-    <span class="credits-pill">💾 500 credits</span>
+    <span class="credits-pill">💾 1000 credits</span>
     <button class="buy-btn" id="buy-credits-btn" style="display:none;">+ Buy credits</button>
   </div>
 
@@ -1658,6 +1658,7 @@
     </div>
     <button id="admin-open-btn" style="display:none; width:100%; padding:14px; margin-bottom:10px; background:var(--accent); color:var(--accent-text); border:none; border-radius:10px; font-weight:600; font-size:1rem; cursor:pointer;">🛠️ Admin Panel</button>
     <button id="signout-btn" style="width:100%; padding:14px; background:transparent; border:1px solid #e0455c; color:#e0455c; border-radius:10px; font-weight:600; font-size:1rem; cursor:pointer; transition:all 0.2s;">Sign Out</button>
+    <button id="delete-account-btn" style="width:100%; margin-top:10px; padding:12px; background:transparent; border:none; color:var(--text-sub); font-size:0.82rem; cursor:pointer; text-decoration:underline;">Delete my account</button>
   </div>
 </div>
 
@@ -1894,7 +1895,7 @@
       hiwStep4: 'Posting <strong>Ads</strong> costs <strong>Credits</strong>, and boosting them to reach more people costs extra <strong>Credits</strong>',
       hiwStep5: 'Upload a photo of your stall',
       hiwStep6: 'Pin your location',
-      hiwStep7: 'Posting ads: <strong>5 Credits</strong> · Boosting: 3hr <strong>10</strong>, 1 day <strong>20</strong>, 3 days <strong>40</strong>, 1 week <strong>70</strong>',
+      hiwStep7: 'Posting ads: <strong>10 Credits</strong> (stays 1 week) · Boosting to carousel: <strong>50 Credits per day</strong> (e.g. 500 credits = 10 days)',
       catAll: '🔍 All — search a category',
       catEatery: '🍽️ Eatery',
       catServices: '🔧 Services',
@@ -1929,7 +1930,7 @@
       hiwStep4: 'Menyiarkan <strong>Iklan</strong> memerlukan <strong>Kredit</strong>, dan menggandakannya untuk menjangkau lebih ramai orang memerlukan <strong>Kredit</strong> tambahan',
       hiwStep5: 'Muat naik foto gerai anda',
       hiwStep6: 'Pasak lokasi anda',
-      hiwStep7: 'Menyiarkan iklan: <strong>5 Kredit</strong> · Menggandakan: 3 jam <strong>10</strong>, 1 hari <strong>20</strong>, 3 hari <strong>40</strong>, 1 minggu <strong>70</strong>',
+      hiwStep7: 'Menyiarkan iklan: <strong>10 Kredit</strong> (kekal 1 minggu) · Boost ke karusel: <strong>50 Kredit sehari</strong> (cth: 500 kredit = 10 hari)',
       catAll: '🔍 Semua — cari kategori',
       catEatery: '🍽️ Kedai Makan',
       catServices: '🔧 Perkhidmatan',
@@ -1965,7 +1966,7 @@
       hiwStep4: '发布<strong>广告</strong>需要<strong>积分</strong>，推广广告以接触更多人需要额外的<strong>积分</strong>',
       hiwStep5: '上传你的摊位照片',
       hiwStep6: '标记你的位置',
-      hiwStep7: '发布广告：<strong>5 积分</strong> · 推广：3小时 <strong>10</strong>，1天 <strong>20</strong>，3天 <strong>40</strong>，1周 <strong>70</strong>',
+      hiwStep7: '发布广告：<strong>10 积分</strong>（保留1周）· 推广到轮播：<strong>每天 50 积分</strong>（例如 500 积分 = 10 天）',
       catAll: '🔍 全部 — 搜索类别',
       catEatery: '🍽️ 餐饮',
       catServices: '🔧 服务',
@@ -3262,12 +3263,12 @@
     if (composerBoostOn && composerBoostCost) {
       postCostNote.textContent = `This will use ${total} credits (10 post + ${composerBoostCost} boost) — shown in carousel for ${composerBoostDays} day${composerBoostDays>1?'s':''}`;
     } else {
-      postCostNote.textContent = 'This will use 10 credits — your ad stays for 2 days';
+      postCostNote.textContent = 'This will use 10 credits — your ad stays for 1 week';
     }
   }
 
   // ===== STATE =====
-  let myCredits = 500;
+  let myCredits = 1000;
   let activeBoostPostBtn = null;
   let selectedBoostCost = null;
   let selectedCategory = null;
@@ -3328,6 +3329,7 @@
 
     const card = document.createElement('div');
     card.className = 'carousel-card';
+    if (ad.id) card.dataset.adId = ad.id;
     if (ad.category) card.dataset.category = ad.category;
     if (ad.lat != null) card.dataset.lat = ad.lat;
     if (ad.lng != null) card.dataset.lng = ad.lng;
@@ -3510,6 +3512,7 @@
 
     ads.filter(ad => ad.boosted && !ad.is_post).forEach(ad => {
       addBoostCarouselCard({
+        id: ad.id,
         name: ad.business_name || 'Business',
         price: ad.price || '',
         desc: ad.description || '',
@@ -3666,9 +3669,9 @@
     const adCost = 10;
     const boostCost = (isAdTab && composerBoostOn) ? composerBoostCost : 0;
     const totalCost = adCost + boostCost;
-    // Lifespan: boosted ads live for the boosted days; normal ads live 2 days
+    // Lifespan: boosted ads live for the boosted days; normal ads live 1 week
     const boostDays = (isAdTab && composerBoostOn && composerBoostDays) ? composerBoostDays : 0;
-    const lifespanDays = boostDays > 0 ? boostDays : 2;
+    const lifespanDays = boostDays > 0 ? boostDays : 7;
 
     if (!selectedCategory) {
       postCostNote.textContent = 'Select a category first';
@@ -3748,6 +3751,7 @@
     // The just-posted item is at the top of the feed
     const justPostedItem = document.getElementById('feed-container').firstElementChild;
 
+    let justPostedCarouselCard = null;
     if (boostCost > 0) {
       addBoostCarouselCard({
         name: itemName || 'Your business',
@@ -3762,6 +3766,9 @@
         lng: (hasLocation && selectedCoords) ? selectedCoords.lng : null,
         boosted: true
       });
+      // The card we just added is the last child of the carousel
+      const cc = document.getElementById('boosted-carousel');
+      justPostedCarouselCard = cc ? cc.lastElementChild : null;
     }
 
     // Persist the ad to Supabase (background — don't block the UI)
@@ -3784,9 +3791,10 @@
       expires_at: new Date(Date.now() + lifespanDays * 24 * 60 * 60 * 1000).toISOString()
     }).then((saved) => {
       console.log('✅ Ad saved to database');
-      // Attach the new DB id to the feed item so its reactions/comments persist
-      if (saved && saved[0] && saved[0].id && justPostedItem) {
-        justPostedItem.dataset.adId = saved[0].id;
+      // Attach the new DB id to the feed item + carousel card so delete can remove both
+      if (saved && saved[0] && saved[0].id) {
+        if (justPostedItem) justPostedItem.dataset.adId = saved[0].id;
+        if (justPostedCarouselCard) justPostedCarouselCard.dataset.adId = saved[0].id;
       }
     }).catch(err => {
       console.warn('⚠️ Ad DB save failed:', err.message);
@@ -4025,7 +4033,18 @@
         try {
           const ok = await supabaseClient.deleteAd(item.dataset.adId);
           if (ok) {
+            // Remove from feed
+            const adId = item.dataset.adId;
             item.remove();
+            // Also remove the matching boosted carousel card, if any
+            const card = document.querySelector(`#boosted-carousel .carousel-card[data-ad-id="${adId}"]`);
+            if (card) card.remove();
+            // Hide the carousel section if it's now empty
+            const carousel = document.getElementById('boosted-carousel');
+            const section = document.getElementById('boosted-carousel-section');
+            if (carousel && section && carousel.querySelectorAll('.carousel-card').length === 0) {
+              section.style.display = 'none';
+            }
             showToast('Ad deleted');
           } else {
             showToast('Could not delete — try again');
@@ -4259,9 +4278,13 @@
       return Array.isArray(data) ? data.length : 0;
     },
 
-    // Delete a user account row (by email)
-    async deleteUser(email) {
-      const response = await this.request(`/users?email=eq.${email}`, {
+    // Delete a user account row (by email or phone)
+    async deleteUser({ email, phone }) {
+      let filter = '';
+      if (email) filter = `email=eq.${encodeURIComponent(email)}`;
+      else if (phone) filter = `phone=eq.${encodeURIComponent(phone)}`;
+      else return false;
+      const response = await this.request(`/users?${filter}`, {
         method: 'DELETE'
       });
       return response.ok;
@@ -4392,6 +4415,38 @@
     const data = await response.json();
     // Worker returns the object key; build the public R2 URL
     return `${R2_PUBLIC_URL}/${data.key}`;
+  }
+
+  // Delete a photo from R2 given its public URL (extracts the object key)
+  async function deletePhotoFromR2(photoUrl) {
+    if (!photoUrl || !photoUrl.startsWith(R2_PUBLIC_URL)) return;
+    const key = photoUrl.slice(R2_PUBLIC_URL.length + 1); // strip domain + '/'
+    if (!key) return;
+    try {
+      await fetch(R2_WORKER_URL, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key })
+      });
+    } catch (e) {
+      console.warn('R2 photo delete failed:', e.message);
+    }
+  }
+
+  // Fetch an ad's photos, then delete them from R2
+  async function deleteAdPhotos(adId) {
+    try {
+      const resp = await supabaseClient.request(`/advertisements?id=eq.${adId}&select=photos`);
+      if (!resp.ok) return;
+      const rows = await resp.json();
+      if (rows.length && Array.isArray(rows[0].photos)) {
+        for (const url of rows[0].photos) {
+          await deletePhotoFromR2(url);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not clean up photos:', e.message);
+    }
   }
   console.log('✅ Supabase client initialized');
 
@@ -4717,12 +4772,26 @@
       if (bal != null) {
         myCredits = bal;
       } else {
-        // No credits stored yet — give the free starting balance and save it
-        myCredits = 500;
-        await supabaseClient.setUserCredits(
+        // No row/credits found — create the user row with the free starting balance
+        myCredits = 1000;
+        const saved = await supabaseClient.setUserCredits(
           { email: currentUser.email || null, phone: currentUser.phone || null },
           myCredits
-        ).catch(() => {});
+        ).catch(() => false);
+        // If update affected nothing (row didn't exist), insert the row
+        const check = await supabaseClient.getUserCredits({
+          email: currentUser.email || null,
+          phone: currentUser.phone || null
+        }).catch(() => null);
+        if (check == null) {
+          await supabaseClient.insertUser({
+            email: currentUser.email || null,
+            phone: currentUser.phone || null,
+            name: currentUser.name || 'User',
+            credits: myCredits,
+            created_at: new Date().toISOString()
+          }).catch(() => {});
+        }
       }
       updateCreditsPill();
     } catch (e) {
@@ -4956,7 +5025,7 @@
     const contact = currentUser.email || currentUser.phone || '—';
     document.getElementById('profile-contact').textContent = contact;
     document.getElementById('profile-credits').textContent =
-      (currentUser.credits != null ? currentUser.credits : 500) + ' credits';
+      (currentUser.credits != null ? currentUser.credits : 1000) + ' credits';
     document.getElementById('profile-method').textContent =
       currentUser.email ? '📧 Email' : '📱 Phone';
   }
@@ -4984,6 +5053,27 @@
   document.getElementById('profile-btn').addEventListener('click', openProfile);
   document.getElementById('profile-close-btn').addEventListener('click', closeProfile);
   document.getElementById('signout-btn').addEventListener('click', signOut);
+  document.getElementById('delete-account-btn').addEventListener('click', async () => {
+    if (!currentUser) return;
+    const confirm1 = confirm('Delete your account permanently? Your ads and posts will remain but your account will be removed. This cannot be undone.');
+    if (!confirm1) return;
+    const confirm2 = confirm('Are you absolutely sure? This is permanent.');
+    if (!confirm2) return;
+    try {
+      // For email users, also try to sign out of Supabase Auth; the users-table row is removed either way
+      const ok = await supabaseClient.deleteUser({
+        email: currentUser.email || null,
+        phone: currentUser.phone || null
+      });
+      // Clear local session regardless
+      localStorage.removeItem('cariCariCurrentUser');
+      currentUser = null;
+      showToast(ok ? '✅ Your account has been deleted' : 'Account removed locally');
+      setTimeout(() => location.reload(), 1200);
+    } catch (e) {
+      showToast('Could not delete account — try again');
+    }
+  });
   document.getElementById('profile-modal-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'profile-modal-overlay') closeProfile();
   });
@@ -5116,14 +5206,14 @@
             return;
           }
           console.log('✅ Account created (email)');
-          currentUser = { name, email, phone, credits: 500 };
+          currentUser = { name, email, phone, credits: 1000 };
           localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
           signUpBtn.disabled = false;
           signUpBtn.textContent = originalText;
           showApp();
           // Save profile row in background
           supabaseClient.insertUser({
-            email, name, phone, credits: 500, created_at: new Date().toISOString()
+            email, name, phone, credits: 1000, created_at: new Date().toISOString()
           }).catch(err => console.warn('⚠️ Profile save error:', err));
         })
         .catch(err => {
@@ -5160,12 +5250,12 @@
       const password_hash = await hashPassword(password);
       const security_answer_hash = await hashPassword(secA.toLowerCase());
       await supabaseClient.insertUser({
-        name, phone, email: null, password_hash, credits: 500,
+        name, phone, email: null, password_hash, credits: 1000,
         security_question: secQ, security_answer_hash,
         created_at: new Date().toISOString()
       });
       console.log('✅ Account created (phone)');
-      currentUser = { name, email: null, phone, credits: 500 };
+      currentUser = { name, email: null, phone, credits: 1000 };
       localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
       signUpBtn.disabled = false;
       signUpBtn.textContent = originalText;
