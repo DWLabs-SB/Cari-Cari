@@ -1048,7 +1048,7 @@
       <div style="font-family:'Segoe Script','Brush Script MT',cursive; font-size:1.7rem; font-weight:600; margin-bottom:4px;">Saya menjual</div>
       <div style="font-size:0.85rem; opacity:0.85;">I'm selling — advertise my business</div>
     </button>
-    <button onclick="chooseIntro('searcher')" style="padding:22px; border-radius:18px; border:2px solid var(--accent); background:transparent; color:var(--text); cursor:pointer;">
+    <button onclick="chooseIntro('buyer')" style="padding:22px; border-radius:18px; border:2px solid var(--accent); background:transparent; color:var(--text); cursor:pointer;">
       <div style="font-family:'Segoe Script','Brush Script MT',cursive; font-size:1.7rem; font-weight:600; margin-bottom:4px; color:var(--accent);">Saya mencari</div>
       <div style="font-size:0.85rem; color:var(--text-sub);">I'm searching — find eateries, services & more</div>
     </button>
@@ -1256,6 +1256,12 @@
       🔔
       <div class="notif-dot" id="notif-dot" style="display:none;"></div>
     </div>
+  </div>
+
+  <!-- MODE TOGGLE: Selling ⇄ Buying -->
+  <div id="mode-toggle-bar" style="display:flex; gap:0; margin-bottom:14px; border-radius:10px; overflow:hidden; border:1px solid var(--input-border);">
+    <button id="mode-sell" style="flex:1; padding:11px; border:none; background:var(--accent); color:var(--accent-text); font-weight:600; cursor:pointer; font-size:0.9rem;">🏪 Saya menjual</button>
+    <button id="mode-buy" style="flex:1; padding:11px; border:none; background:transparent; color:var(--text); font-weight:600; cursor:pointer; font-size:0.9rem;">🔍 Saya mencari</button>
   </div>
 
   <!-- SEARCH BY NAME (appears when 'Search by name' picked in dropdown) -->
@@ -1967,6 +1973,8 @@
       boostLabel: 'Boost this ad',
       distanceInfo: '📍 Showing what\'s closest to you first',
       nearbyFilter: '📍 Nearby',
+      modeSell: "🏪 I'm selling",
+      modeBuy: "🔍 I'm searching",
       distanceUnits: 'm away',
       hiwTitle: '💡 How Cari-Cari works',
       hiwStep1: 'Share ads or posts about local businesses, items, & services',
@@ -2003,6 +2011,8 @@
       boostLabel: 'Gandakan iklan ini',
       distanceInfo: '📍 Menunjukkan yang terdekat dengan anda dahulu',
       nearbyFilter: '📍 Berdekatan',
+      modeSell: '🏪 Saya menjual',
+      modeBuy: '🔍 Saya mencari',
       hiwTitle: '💡 Cara Cari-Cari berfungsi',
       hiwStep1: 'Kongsi iklan atau pos tentang perniagaan, item & perkhidmatan tempatan',
       hiwStep2: 'Temui apa yang berdekatan & berhubung dengan penjual',
@@ -2038,6 +2048,8 @@
       boostLabel: '推广此广告',
       distanceInfo: '📍 优先显示离你最近的',
       nearbyFilter: '📍 附近',
+      modeSell: '🏪 我要卖',
+      modeBuy: '🔍 我要找',
       distanceUnits: '米外',
       hiwTitle: '💡 Cari-Cari 如何运作',
       hiwStep1: '分享关于本地商家、商品和服务的广告或帖子',
@@ -2088,6 +2100,12 @@
     // Update filter pills
     const nearbyPill = document.querySelector('[data-filter="nearby"]');
     if (nearbyPill) nearbyPill.textContent = t.nearbyFilter;
+
+    // Update mode toggle buttons
+    const modeSellBtn = document.getElementById('mode-sell');
+    const modeBuyBtn = document.getElementById('mode-buy');
+    if (modeSellBtn && t.modeSell) modeSellBtn.textContent = t.modeSell;
+    if (modeBuyBtn && t.modeBuy) modeBuyBtn.textContent = t.modeBuy;
 
     // Update distance info
     document.getElementById('distance-text').textContent = t.distanceInfo;
@@ -4632,6 +4650,46 @@
     }
   })();
 
+  // ===== SELLER / BUYER MODE (light version) =====
+  // 'seller' → composer + My Ads prominent. 'buyer' → Nearby + Search prominent.
+  function applyMode(mode) {
+    userIntent = mode;
+    localStorage.setItem('cariCariIntent', mode);
+    // Update the toggle buttons' look
+    const sellBtn = document.getElementById('mode-sell');
+    const buyBtn = document.getElementById('mode-buy');
+    if (sellBtn && buyBtn) {
+      const on = 'background:var(--accent); color:var(--accent-text);';
+      const off = 'background:transparent; color:var(--text);';
+      sellBtn.style.cssText = `flex:1; padding:11px; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; ${mode==='seller'?on:off}`;
+      buyBtn.style.cssText  = `flex:1; padding:11px; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; ${mode==='buyer'?on:off}`;
+    }
+    const composer = document.querySelector('.composer');
+    const nearbyPill = document.querySelector('.filter-pill[data-filter="nearby"]');
+    if (mode === 'buyer') {
+      // Emphasize discovery: collapse composer, highlight Nearby
+      if (composer) composer.style.display = 'none';
+      // Activate Nearby filter
+      if (nearbyPill) nearbyPill.click();
+    } else {
+      // Seller: show composer, focus it
+      if (composer) {
+        composer.style.display = 'block';
+        // switch to the Post tab
+        const postTab = document.getElementById('postTabLabel');
+        if (postTab) postTab.click();
+      }
+    }
+  }
+
+  function wireModeToggle() {
+    const sellBtn = document.getElementById('mode-sell');
+    const buyBtn = document.getElementById('mode-buy');
+    if (sellBtn) sellBtn.addEventListener('click', () => applyMode('seller'));
+    if (buyBtn) buyBtn.addEventListener('click', () => applyMode('buyer'));
+  }
+  wireModeToggle();
+
   function showSignIn() {
     document.getElementById('signUpScreen').classList.remove('active');
     const rs = document.getElementById('resetScreen');
@@ -4838,20 +4896,12 @@
     loadCreditsAndSettings();
     refreshAdminButtonVisibility();
     console.log('🎉 App loaded for user:', currentUser.name);
-    // Personalize first view based on intro choice (both can still do everything)
-    const intent = userIntent || localStorage.getItem('cariCariIntent');
+    // Apply seller/buyer mode based on their choice (normalize old 'searcher' → 'buyer')
+    let intent = userIntent || localStorage.getItem('cariCariIntent') || 'seller';
+    if (intent === 'searcher') intent = 'buyer';
     setTimeout(() => {
-      if (intent === 'seller') {
-        // Nudge sellers toward posting: focus the composer
-        const composer = document.querySelector('.composer');
-        const postTab = document.getElementById('postTabLabel');
-        if (postTab) postTab.click();
-        if (composer) composer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        showToast('Ready to advertise? Post your ad below 👇');
-      } else if (intent === 'searcher') {
-        showToast('Browse whats near you — tap Nearby or search a category 🔍');
-      }
-    }, 600);
+      applyMode(intent);
+    }, 500);
   }
 
   // Load the user's real credit balance from the database
