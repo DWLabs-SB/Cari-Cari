@@ -1038,7 +1038,7 @@
 <body>
 
 <!-- INTRO CHOICE SCREEN (shown first) -->
-<div id="introChoice" style="position:fixed; inset:0; z-index:5000; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px; text-align:center;">
+<div id="introChoice" style="display:none; position:fixed; inset:0; z-index:5000; background:var(--bg); flex-direction:column; align-items:center; justify-content:center; padding:28px; text-align:center;">
   <div style="font-size:1.6rem; margin-bottom:6px;">🌟</div>
   <div style="font-size:1.4rem; font-weight:700; color:var(--text); margin-bottom:4px;">Cari-Cari</div>
   <div style="color:var(--text-sub); font-size:0.9rem; margin-bottom:30px;" id="introSubtitle">What brings you here today?</div>
@@ -1078,7 +1078,7 @@
     <div class="landing-description" id="landingDescription">
       Cari-Cari connects local businesses with their community. Share what you sell, showcase your services, and reach customers searching for exactly what you offer — all from your phone.
     </div>
-    <button class="landing-cta" id="landingCTA" onclick="proceedToAuth()">Get Started</button>
+    <button class="landing-cta" id="landingCTA" onclick="showIntroChoice()">Get Started</button>
   </div>
 
   <div class="landing-footer" id="landingFooter">
@@ -4688,32 +4688,32 @@
   }
 
   function proceedToAuth() {
+    const intro = document.getElementById('introChoice');
+    if (intro) intro.style.display = 'none';
     document.getElementById('landingPage').classList.add('hidden');
     document.getElementById('authContainer').classList.remove('hidden');
     showSignIn();
     console.log('📱 Transitioning to auth...');
   }
 
-  // Intro choice: seller vs searcher (personalization only — everyone can do both)
+  // Show the seller/buyer choice (triggered by "Get Started" on the landing page)
+  function showIntroChoice() {
+    const intro = document.getElementById('introChoice');
+    if (intro) intro.style.display = 'flex';
+  }
+
+  // Intro choice: seller vs buyer → then go to SIGN UP
   let userIntent = null;
   function chooseIntro(intent) {
     userIntent = intent;
     localStorage.setItem('cariCariIntent', intent);
     const intro = document.getElementById('introChoice');
     if (intro) intro.style.display = 'none';
-    // Both go to sign in / sign up; intent shapes their first view after login
-    proceedToAuth();
+    // After choosing, take them to create an account
+    document.getElementById('landingPage').classList.add('hidden');
+    document.getElementById('authContainer').classList.remove('hidden');
+    showSignUp();
   }
-  // Skip the intro if they've already chosen before (returning visitor)
-  (function initIntro() {
-    const saved = localStorage.getItem('cariCariIntent');
-    const savedUser = localStorage.getItem('cariCariCurrentUser');
-    if (saved || savedUser) {
-      const intro = document.getElementById('introChoice');
-      if (intro) intro.style.display = 'none';
-      userIntent = saved || null;
-    }
-  })();
 
   // ===== SELLER / BUYER MODE (light version) =====
   // 'seller' → composer + My Ads prominent. 'buyer' → Nearby + Search prominent.
@@ -5421,6 +5421,7 @@
     const identifier = document.getElementById('signInEmail').value.trim();
     const password = document.getElementById('signInPassword').value.trim();
     const errorDiv = document.getElementById('signInError');
+    errorDiv.style.color = '';  // reset (in case a green success message was shown)
 
     if (!identifier) {
       errorDiv.textContent = 'Enter your email or phone number';
@@ -5573,15 +5574,21 @@
             return;
           }
           console.log('✅ Account created (email)');
-          currentUser = { name, email, phone, credits: 1000 };
-          localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
-          signUpBtn.disabled = false;
-          signUpBtn.textContent = originalText;
-          showApp();
-          // Save profile row in background
+          // Save profile row, then send to Sign In (don't auto-login)
           supabaseClient.insertUser({
             email, name, phone, credits: 1000, created_at: new Date().toISOString()
           }).catch(err => console.warn('⚠️ Profile save error:', err));
+          signUpBtn.disabled = false;
+          signUpBtn.textContent = originalText;
+          showSignIn();
+          const signInErr = document.getElementById('signInError');
+          if (signInErr) {
+            signInErr.style.color = '#2e9e5b';
+            signInErr.textContent = '✅ Account created! Please sign in.';
+            signInErr.style.display = 'block';
+          }
+          const siInput = document.getElementById('signInEmail');
+          if (siInput) siInput.value = email;
         })
         .catch(err => {
           console.error('❌ Error:', err);
@@ -5622,11 +5629,19 @@
         created_at: new Date().toISOString()
       });
       console.log('✅ Account created (phone)');
-      currentUser = { name, email: null, phone, credits: 1000 };
-      localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+      // Don't auto-login — send them to Sign In to confirm their password
       signUpBtn.disabled = false;
       signUpBtn.textContent = originalText;
-      showApp();
+      showSignIn();
+      const signInErr = document.getElementById('signInError');
+      if (signInErr) {
+        signInErr.style.color = '#2e9e5b';
+        signInErr.textContent = '✅ Account created! Please sign in.';
+        signInErr.style.display = 'block';
+      }
+      // Pre-fill their phone for convenience
+      const siInput = document.getElementById('signInEmail');
+      if (siInput) siInput.value = phone;
     } catch (err) {
       console.error('❌ Phone signup error:', err);
       errorDiv.textContent = 'Could not create account — try again';
@@ -5638,6 +5653,7 @@
 
   // Expose handlers for inline onclick/onchange in the HTML
   window.proceedToAuth = proceedToAuth;
+  window.showIntroChoice = showIntroChoice;
   window.chooseIntro = chooseIntro;
   window.backToIntro = backToIntro;
 
