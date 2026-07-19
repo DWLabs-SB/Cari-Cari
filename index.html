@@ -2566,19 +2566,29 @@
       note.textContent = '';
       return;
     }
+    // Split into words — a match needs ALL typed words present somewhere in the ad (any order)
+    const words = q.split(/\s+/).filter(Boolean);
     let shown = 0;
     items.forEach(item => {
       const nameEl = item.querySelector('.feed-user');
       const descEl = item.querySelector('.feed-text');
-      const name = nameEl ? nameEl.textContent.toLowerCase() : '';
-      const desc = descEl ? descEl.textContent.toLowerCase() : '';
-      if (name.includes(q) || desc.includes(q)) {
+      const priceEl = item.querySelector('.feed-price');
+      const locEl = item.querySelector('.feed-location');
+      const haystack = [
+        nameEl ? nameEl.textContent : '',
+        descEl ? descEl.textContent : '',
+        priceEl ? priceEl.textContent : '',
+        locEl ? locEl.textContent : ''
+      ].join(' ').toLowerCase();
+      // Only match the actual words the user typed — no category guessing
+      const match = words.every(w => haystack.includes(w));
+      if (match) {
         item.style.display = 'block'; shown++;
       } else {
         item.style.display = 'none';
       }
     });
-    note.textContent = shown > 0 ? `Found ${shown} result${shown>1?'s':''}` : 'No shops found with that name';
+    note.textContent = shown > 0 ? `Found ${shown} result${shown>1?'s':''}` : 'Nothing found — try another word';
   }
 
   document.getElementById('search-name-btn').addEventListener('click', searchByName);
