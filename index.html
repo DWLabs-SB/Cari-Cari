@@ -3816,7 +3816,22 @@
       adPostBtnRef.textContent = originalBtnText;
     }
 
-    myCredits -= totalCost;
+    // ✅ SPEND CREDITS VIA EDGE FUNCTION (server-side verification)
+    const spendResult = await supabaseClient.spendCredits({
+      user_access_token: currentAuthToken,
+      target_email: currentUser.email,
+      target_phone: currentUser.phone,
+      amount: totalCost
+    });
+
+    if (!spendResult.ok) {
+      postCostNote.textContent = `Cannot post ad: ${spendResult.error}`;
+      postCostNote.style.color = '#e0455c';
+      return;
+    }
+
+    // ✅ Update local credits with server response
+    myCredits = spendResult.new_balance;
     updateCreditsPill();
     persistCredits();
     postCostNote.style.color = '';
@@ -4178,7 +4193,7 @@
     });
   });
 
-  document.getElementById('boost-confirm-btn').addEventListener('click', () => {
+  document.getElementById('boost-confirm-btn').addEventListener('click', async () => {
     if (!selectedBoostCost || !activeBoostPostBtn) return;
 
     if (myCredits < selectedBoostCost) {
@@ -4186,7 +4201,21 @@
       return;
     }
 
-    myCredits -= selectedBoostCost;
+    // ✅ SPEND CREDITS VIA EDGE FUNCTION (server-side verification)
+    const spendResult = await supabaseClient.spendCredits({
+      user_access_token: currentAuthToken,
+      target_email: currentUser.email,
+      target_phone: currentUser.phone,
+      amount: selectedBoostCost
+    });
+
+    if (!spendResult.ok) {
+      showToast(`Cannot boost: ${spendResult.error}`);
+      return;
+    }
+
+    // ✅ Update local credits with server response
+    myCredits = spendResult.new_balance;
     updateCreditsPill();
     persistCredits();
 
@@ -4492,7 +4521,11 @@
       try {
         const response = await fetch('https://ihecgvosemcpxqweqlty.supabase.co/functions/v1/credits', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': this.key,
+            'Authorization': `Bearer ${this.key}`
+          },
           body: JSON.stringify({
             action: 'grant',
             admin_email,
@@ -4504,7 +4537,7 @@
         });
         const result = await response.json();
         if (!response.ok) {
-          console.error('Grant failed:', result.error);
+          console.error('Grant failed:', result.error, result.detail || '');
           return null;
         }
         return result.new_balance;
@@ -4519,7 +4552,11 @@
       try {
         const response = await fetch('https://ihecgvosemcpxqweqlty.supabase.co/functions/v1/credits', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': this.key,
+            'Authorization': `Bearer ${this.key}`
+          },
           body: JSON.stringify({
             action: 'spend',
             admin_access_token: user_access_token,
@@ -4533,7 +4570,7 @@
           return { ok: false, error: 'Insufficient credits', available: result.available };
         }
         if (!response.ok) {
-          console.error('Spend failed:', result.error);
+          console.error('Spend failed:', result.error, result.detail || '');
           return { ok: false, error: result.error };
         }
         return { ok: true, new_balance: result.new_balance };
