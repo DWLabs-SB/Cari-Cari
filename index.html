@@ -1239,7 +1239,8 @@
   <!-- HEADER: Search + Integrations + Earnings + Parking + Language -->
   <div class="header-row">
     <select id="categoryFilter" style="flex: 1; padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text); font-size: 14px; cursor: pointer;">
-      <option value="" id="catOptAll">🔍 All — search a category</option>
+      <option value="" id="catOptAll">🔍 All — browse a category</option>
+      <option value="__search__" id="catOptSearch">🔎 Search by name</option>
       <option value="eatery" id="catOptEatery">🍽️ Eatery</option>
       <option value="services" id="catOptServices">🔧 Services</option>
       <option value="product" id="catOptProduct">📦 Product</option>
@@ -1255,6 +1256,15 @@
       🔔
       <div class="notif-dot" id="notif-dot" style="display:none;"></div>
     </div>
+  </div>
+
+  <!-- SEARCH BY NAME (appears when 'Search by name' picked in dropdown) -->
+  <div id="search-box-row" style="display:none; margin-bottom:14px;">
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="search-name-input" placeholder="Type a shop or business name..." style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text); font-size:14px;">
+      <button id="search-name-btn" style="padding:12px 18px; background:var(--accent); color:var(--accent-text); border:none; border-radius:8px; font-weight:600; cursor:pointer;">Search</button>
+    </div>
+    <div id="search-result-note" style="font-size:0.8rem; color:var(--text-sub); margin-top:6px;"></div>
   </div>
 
   <!-- STORIES BAR -->
@@ -2512,7 +2522,53 @@
   }
 
   // Add event listener for category filter
-  document.getElementById('categoryFilter').addEventListener('change', filterShops);
+  document.getElementById('categoryFilter').addEventListener('change', () => {
+    const val = document.getElementById('categoryFilter').value;
+    const searchRow = document.getElementById('search-box-row');
+    if (val === '__search__') {
+      // Show the search box, reveal everything, let them type
+      if (searchRow) searchRow.style.display = 'block';
+      const input = document.getElementById('search-name-input');
+      if (input) { input.value = ''; input.focus(); }
+      document.querySelectorAll('#feed-container .feed-item').forEach(i => i.style.display = 'block');
+      document.getElementById('search-result-note').textContent = '';
+    } else {
+      if (searchRow) searchRow.style.display = 'none';
+      filterShops();
+    }
+  });
+
+  // Search ads by name/description (anywhere — ignores distance)
+  function searchByName() {
+    const q = (document.getElementById('search-name-input').value || '').trim().toLowerCase();
+    const note = document.getElementById('search-result-note');
+    const items = document.querySelectorAll('#feed-container .feed-item');
+    if (!q) {
+      items.forEach(i => i.style.display = 'block');
+      note.textContent = '';
+      return;
+    }
+    let shown = 0;
+    items.forEach(item => {
+      const nameEl = item.querySelector('.feed-user');
+      const descEl = item.querySelector('.feed-text');
+      const name = nameEl ? nameEl.textContent.toLowerCase() : '';
+      const desc = descEl ? descEl.textContent.toLowerCase() : '';
+      if (name.includes(q) || desc.includes(q)) {
+        item.style.display = 'block'; shown++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+    note.textContent = shown > 0 ? `Found ${shown} result${shown>1?'s':''}` : 'No shops found with that name';
+  }
+
+  document.getElementById('search-name-btn').addEventListener('click', searchByName);
+  document.getElementById('search-name-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchByName(); });
+  document.getElementById('search-name-input').addEventListener('input', () => {
+    // live filter as they type
+    searchByName();
+  });
 
   // ===== ADMIN MODE (Hide Revenue from Normal Users) =====
   let isAdmin = false;
