@@ -1271,6 +1271,7 @@
       <button id="search-name-btn" style="padding:12px 18px; background:var(--accent); color:var(--accent-text); border:none; border-radius:8px; font-weight:600; cursor:pointer;">Search</button>
     </div>
     <div id="search-result-note" style="font-size:0.8rem; color:var(--text-sub); margin-top:6px;"></div>
+    <div id="search-results-list" style="margin-top:8px; display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 
   <!-- STORIES BAR -->
@@ -2259,13 +2260,37 @@
       err => {
         console.warn('Geolocation error:', err.message);
         if (err.code === 1) {
-          distanceText.textContent = '⚠️ Location blocked — enable it in your browser to see what\'s nearest';
+          distanceText.textContent = '⚠️ Location is turned off for this site — tap here to fix';
+          distanceText.style.cursor = 'pointer';
+          distanceText.onclick = showLocationHelp;
+        } else if (err.code === 3) {
+          distanceText.textContent = '⚠️ Location timed out — make sure GPS is on, then try again';
         } else {
           distanceText.textContent = '⚠️ Could not get your location — try again';
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
+  }
+
+  // Helpful popup guiding the user to re-enable location
+  function showLocationHelp() {
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const steps = isIOS
+      ? `<b>On iPhone:</b><br>1. Open <b>Settings → Privacy & Security → Location Services</b> → make sure it's ON.<br>2. Scroll to <b>Safari Websites</b> → set to "While Using".<br>3. Come back here and tap Nearby again.<br><br>Or: tap the <b>"aA"</b> in Safari's address bar → Website Settings → Location → Allow.`
+      : `<b>On Android (Chrome):</b><br>1. Tap the <b>🔒 lock icon</b> next to the web address at the top.<br>2. Tap <b>Permissions</b> → <b>Location</b> → set to <b>Allow</b>.<br>3. Refresh and tap Nearby again.`;
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:4000; display:flex; align-items:center; justify-content:center; padding:24px;';
+    overlay.innerHTML = `
+      <div style="background:var(--card); border-radius:16px; max-width:360px; padding:24px;">
+        <div style="font-size:1.8rem; text-align:center; margin-bottom:8px;">📍</div>
+        <h3 style="margin:0 0 12px; text-align:center;">Turn on location to find what's nearest</h3>
+        <p style="color:var(--text-sub); font-size:0.85rem; line-height:1.6;">${steps}</p>
+        <button id="loc-help-close" style="width:100%; margin-top:16px; padding:12px; background:var(--accent); color:var(--accent-text); border:none; border-radius:10px; font-weight:600; cursor:pointer;">Got it</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#loc-help-close').onclick = () => overlay.remove();
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
   }
 
 
@@ -2550,6 +2575,7 @@
       if (input) { input.value = ''; input.focus(); }
       document.querySelectorAll('#feed-container .feed-item').forEach(i => i.style.display = 'block');
       document.getElementById('search-result-note').textContent = '';
+      const rl = document.getElementById('search-results-list'); if (rl) rl.innerHTML = '';
     } else {
       if (searchRow) searchRow.style.display = 'none';
       filterShops();
@@ -2560,35 +2586,46 @@
   function searchByName() {
     const q = (document.getElementById('search-name-input').value || '').trim().toLowerCase();
     const note = document.getElementById('search-result-note');
-    const items = document.querySelectorAll('#feed-container .feed-item');
+    const list = document.getElementById('search-results-list');
+    list.innerHTML = '';
     if (!q) {
-      items.forEach(i => i.style.display = 'block');
       note.textContent = '';
       return;
     }
-    // Split into words — a match needs ALL typed words present somewhere in the ad (any order)
     const words = q.split(/\s+/).filter(Boolean);
-    let shown = 0;
-    items.forEach(item => {
-      const nameEl = item.querySelector('.feed-user');
-      const descEl = item.querySelector('.feed-text');
-      const priceEl = item.querySelector('.feed-price');
-      const locEl = item.querySelector('.feed-location');
+    const ads = window.__allAds || [];
+    const matches = ads.filter(ad => {
       const haystack = [
-        nameEl ? nameEl.textContent : '',
-        descEl ? descEl.textContent : '',
-        priceEl ? priceEl.textContent : '',
-        locEl ? locEl.textContent : ''
+        ad.business_name || '',
+        ad.description || '',
+        ad.price || '',
+        ad.location_text || ''
       ].join(' ').toLowerCase();
-      // Only match the actual words the user typed — no category guessing
-      const match = words.every(w => haystack.includes(w));
-      if (match) {
-        item.style.display = 'block'; shown++;
-      } else {
-        item.style.display = 'none';
-      }
+      return words.every(w => haystack.includes(w));
     });
-    note.textContent = shown > 0 ? `Found ${shown} result${shown>1?'s':''}` : 'Nothing found — try another word';
+
+    if (matches.length === 0) {
+      note.textContent = 'Nothing found — try another word';
+      return;
+    }
+    note.textContent = `${matches.length} result${matches.length>1?'s':''} — tap to view`;
+
+    matches.forEach(ad => {
+      const thumb = (ad.photos && ad.photos.length)
+        ? `<img src="${ad.photos[0]}" alt="" style="width:48px; height:48px; border-radius:8px; object-fit:cover; flex-shrink:0;">`
+        : `<div style="width:48px; height:48px; border-radius:8px; background:var(--input-bg); display:flex; align-items:center; justify-content:center; flex-shrink:0;">🏪</div>`;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px; background:var(--input-bg); border:1px solid var(--input-border); border-radius:10px; cursor:pointer;';
+      row.innerHTML = `
+        ${thumb}
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ad.business_name || 'Business'}</div>
+          <div style="font-size:0.8rem; color:var(--text-sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ad.price ? ad.price + ' RM · ' : ''}${ad.location_text || ''}</div>
+        </div>
+        <span style="color:var(--text-sub);">›</span>`;
+      row.addEventListener('click', () => openAdDetail(ad));
+      list.appendChild(row);
+    });
   }
 
   document.getElementById('search-name-btn').addEventListener('click', searchByName);
@@ -3524,6 +3561,8 @@
       return;
     }
     if (!Array.isArray(ads) || ads.length === 0) return;
+    // Keep a copy for search (only real ads, not posts)
+    window.__allAds = ads.filter(a => !a.is_post);
 
     // Carousel shows newest boosted first; feed shows all (newest first).
     // getAds() already returns newest-first. Render feed oldest-first so newest ends on top
