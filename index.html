@@ -5442,7 +5442,8 @@
     if (looksLikeEmail(identifier)) {
       supabaseClient.auth_signin(identifier, password)
         .then(async (data) => {
-          if (data.error) {
+          // Only a genuine success returns an access_token. Anything else = failed login.
+          if (!data || !data.access_token) {
             errorDiv.textContent = t('invalidCredentials');
             errorDiv.style.display = 'block';
             signInBtn.disabled = false;
