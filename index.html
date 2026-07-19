@@ -1209,7 +1209,7 @@
   <!-- SIGN UP SCREEN -->
   <div id="signUpScreen" class="auth-screen">
     <div class="auth-form">
-      <button onclick="showSignIn()" style="align-self:flex-start; background:none; border:none; color:var(--text-sub); font-size:0.9rem; cursor:pointer; padding:0; margin-bottom:8px;">← Back</button>
+      <button onclick="backFromSignUp()" style="align-self:flex-start; background:none; border:none; color:var(--text-sub); font-size:0.9rem; cursor:pointer; padding:0; margin-bottom:8px;">← Back</button>
       <h2 id="signUpTitle">Create Account</h2>
       <input type="text" id="signUpName" class="auth-input" placeholder="Full Name">
       <input type="tel" id="signUpPhone" class="auth-input" placeholder="Phone Number">
@@ -4702,6 +4702,16 @@
     if (intro) intro.style.display = 'flex';
   }
 
+  // Back from Sign Up → clear the form error and return to the intro choice
+  function backFromSignUp() {
+    const err = document.getElementById('signUpError');
+    if (err) { err.style.display = 'none'; err.textContent = ''; }
+    document.getElementById('signUpScreen').classList.remove('active');
+    document.getElementById('authContainer').classList.add('hidden');
+    document.getElementById('landingPage').classList.remove('hidden');
+    showIntroChoice();
+  }
+
   // Intro choice: seller vs buyer → then go to SIGN UP
   let userIntent = null;
   function chooseIntro(intent) {
@@ -5615,10 +5625,11 @@
       // Check phone isn't already registered
       const existing = await supabaseClient.getUserByPhone(phone);
       if (existing) {
-        errorDiv.textContent = 'That phone number is already registered';
+        errorDiv.innerHTML = 'That phone number is already registered. <span style="text-decoration:underline; cursor:pointer; color:var(--accent);" onclick="showSignIn()">Sign in instead?</span> Or change the number above to register a different one.';
         errorDiv.style.display = 'block';
         signUpBtn.disabled = false;
         signUpBtn.textContent = originalText;
+        document.getElementById('signUpPhone').focus();
         return;
       }
       const password_hash = await hashPassword(password);
@@ -5654,6 +5665,7 @@
   // Expose handlers for inline onclick/onchange in the HTML
   window.proceedToAuth = proceedToAuth;
   window.showIntroChoice = showIntroChoice;
+  window.backFromSignUp = backFromSignUp;
   window.chooseIntro = chooseIntro;
   window.backToIntro = backToIntro;
 
