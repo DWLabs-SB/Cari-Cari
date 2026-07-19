@@ -2700,112 +2700,10 @@
     addTransaction(type, amount, `${type.toUpperCase()} - Commission`);
   }
 
-  // ===== 1. GRAB DELIVERY =====
-  let grabEnabled = false;
-  document.getElementById('enable-grab-btn').addEventListener('click', () => {
-    const btn = document.getElementById('enable-grab-btn');
-    grabEnabled = !grabEnabled;
-    btn.textContent = grabEnabled ? '✓ Grab Delivery Enabled' : '✓ Enable Grab Delivery';
-    btn.style.opacity = grabEnabled ? '0.7' : '1';
-    showToast(grabEnabled ? '✅ Grab Delivery enabled. Earn 10% per delivery!' : '❌ Grab Delivery disabled');
-  });
+  // ===== (removed) fake affiliate-earnings simulation =====
+  // The old simulated-commission timers and demo buttons were removed.
+  // Real affiliate earnings are tracked by Lazada/Shopee/Involve Asia, not here.
 
-  // Simulate Grab delivery bookings
-  setInterval(() => {
-    if (grabEnabled && Math.random() > 0.85) {
-      const deliveryFee = Math.floor(Math.random() * 30) + 10; // 10-40 RM
-      const commission = deliveryFee * 0.10;
-      addIntegrationEarning('grab', deliveryFee, commission);
-      showToast(`🚗 Grab: +${commission.toFixed(2)} RM earned from ${deliveryFee} RM delivery`);
-    }
-  }, 15000); // Every 15 seconds
-
-  // ===== 2. LAZADA & SHOPEE AFFILIATE =====
-  const LAZADA_COMMISSION = 0.12; // 12% average
-  const SHOPEE_COMMISSION = 0.10; // 10% average
-
-  document.getElementById('enable-lazada-btn').addEventListener('click', () => {
-    const amount = Math.floor(Math.random() * 300) + 50; // 50-350 RM
-    const commission = amount * LAZADA_COMMISSION;
-    addIntegrationEarning('lazada', amount, commission);
-    showToast(`🛍️ Lazada: +${commission.toFixed(2)} RM from ${amount} RM purchase`);
-  });
-
-  document.getElementById('enable-shopee-btn').addEventListener('click', () => {
-    const amount = Math.floor(Math.random() * 250) + 50; // 50-300 RM
-    const commission = amount * SHOPEE_COMMISSION;
-    addIntegrationEarning('shopee', amount, commission);
-    showToast(`🛍️ Shopee: +${commission.toFixed(2)} RM from ${amount} RM purchase`);
-  });
-
-  // Simulate Lazada/Shopee clicks
-  setInterval(() => {
-    if (Math.random() > 0.92) {
-      const amount = Math.floor(Math.random() * 200) + 50;
-      const commission = amount * LAZADA_COMMISSION;
-      addIntegrationEarning('lazada', amount, commission);
-      showToast(`🛍️ Lazada: +${commission.toFixed(2)} RM`);
-    }
-  }, 20000);
-
-  // ===== 3. TOUCH N GO TOP-UP =====
-  const TNG_COMMISSION = 0.03; // 3%
-
-  document.getElementById('topup-tng-btn').addEventListener('click', () => {
-    const amount = parseInt(document.getElementById('tng-amount').value);
-    
-    if (!amount || amount < 10 || amount > 500) {
-      showToast('Enter amount between 10-500 RM');
-      return;
-    }
-
-    const commission = amount * TNG_COMMISSION;
-    addIntegrationEarning('tng', amount, commission);
-    showToast(`📱 Touch 'n Go: +${commission.toFixed(2)} RM from ${amount} RM top-up`);
-    document.getElementById('tng-amount').value = '';
-  });
-
-  // ===== 4. INVOLVE ASIA (MULTI-BRAND) =====
-  const involveBrands = {
-    watsons: { name: 'Watsons', commission: 0.08 },      // 8%
-    shopee: { name: 'Shopee', commission: 0.10 },        // 10%
-    ringgitplus: { name: 'RinggitPlus', commission: 0.15 }, // 15%
-    shein: { name: 'Shein', commission: 0.12 }           // 12%
-  };
-
-  document.querySelectorAll('.involve-brand').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const brand = btn.dataset.brand;
-      const brandInfo = involveBrands[brand];
-      
-      // Simulate purchase
-      const amount = Math.floor(Math.random() * 400) + 50; // 50-450 RM
-      const commission = amount * brandInfo.commission;
-      
-      addIntegrationEarning('involve', amount, commission);
-      showToast(`✨ ${brandInfo.name}: +${commission.toFixed(2)} RM from ${amount} RM purchase`);
-      
-      // Visual feedback
-      btn.style.background = 'var(--accent)';
-      btn.style.color = 'var(--accent-text)';
-      setTimeout(() => {
-        btn.style.background = 'var(--input-bg)';
-        btn.style.color = 'var(--text)';
-      }, 500);
-    });
-  });
-
-  // Simulate Involve Asia clicks
-  setInterval(() => {
-    if (Math.random() > 0.88) {
-      const brands = Object.keys(involveBrands);
-      const randomBrand = brands[Math.floor(Math.random() * brands.length)];
-      const brandInfo = involveBrands[randomBrand];
-      const amount = Math.floor(Math.random() * 350) + 50;
-      const commission = amount * brandInfo.commission;
-      addIntegrationEarning('involve', amount, commission);
-    }
-  }, 25000);
   let totalEarnings = 0;
   let transactionCount = 0;
   let transactionHistory = [];
@@ -5002,6 +4900,8 @@
   // Save the current balance to the database
   async function persistCredits() {
     if (!currentUser) return;
+    // Keep the local snapshot in sync so all displays agree
+    currentUser.credits = myCredits;
     try {
       await supabaseClient.setUserCredits(
         { email: currentUser.email || null, phone: currentUser.phone || null },
@@ -5228,8 +5128,8 @@
     // Show whichever identifier they have
     const contact = currentUser.email || currentUser.phone || '—';
     document.getElementById('profile-contact').textContent = contact;
-    document.getElementById('profile-credits').textContent =
-      (currentUser.credits != null ? currentUser.credits : 1000) + ' credits';
+    // Use the live balance (same source as the header pill), not the stale signup snapshot
+    document.getElementById('profile-credits').textContent = myCredits + ' credits';
     document.getElementById('profile-method').textContent =
       currentUser.email ? '📧 Email' : '📱 Phone';
     // Phone number row
