@@ -1835,6 +1835,7 @@
 <script>
   // Declared early because addFeedItem (used for sample ads at startup) references it
   let currentUser = null;
+  let currentAuthToken = null;  // Stores access token for Edge Function calls
 
   // ===== BUY CREDITS (manual DuitNow / bank transfer) =====
   // Fill in your real payment details here.
@@ -5467,6 +5468,9 @@
             signInBtn.textContent = originalText;
             return;
           }
+          // ✅ SAVE THE TOKEN FOR EDGE FUNCTIONS
+          currentAuthToken = data.access_token;
+          
           // Load real profile
           let profile = null;
           try { profile = await supabaseClient.getUser(identifier); } catch (e) {}
@@ -5494,6 +5498,9 @@
 
       if (result && result.ok && result.user) {
         // Success via the secure server function
+        // ✅ CREATE A TEMP TOKEN FOR PHONE USERS (they don't have Supabase Auth)
+        currentAuthToken = `phone_${result.user.phone}_temp`;
+        
         currentUser = {
           name: result.user.name,
           email: result.user.email,
