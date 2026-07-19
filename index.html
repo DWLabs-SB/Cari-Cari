@@ -1038,7 +1038,7 @@
 <body>
 
 <!-- INTRO CHOICE SCREEN (shown first) -->
-<div id="introChoice" style="display:none; position:fixed; inset:0; z-index:5000; background:var(--bg); flex-direction:column; align-items:center; justify-content:center; padding:28px; text-align:center;">
+<div id="introChoice" style="display:none; position:fixed; inset:0; z-index:10000; background:var(--bg); flex-direction:column; align-items:center; justify-content:center; padding:28px; text-align:center;">
   <div style="font-size:1.6rem; margin-bottom:6px;">🌟</div>
   <div style="font-size:1.4rem; font-weight:700; color:var(--text); margin-bottom:4px;">Cari-Cari</div>
   <div style="color:var(--text-sub); font-size:0.9rem; margin-bottom:30px;" id="introSubtitle">What brings you here today?</div>
@@ -4698,8 +4698,14 @@
 
   // Show the seller/buyer choice (triggered by "Get Started" on the landing page)
   function showIntroChoice() {
+    console.log('▶️ showIntroChoice called');
     const intro = document.getElementById('introChoice');
-    if (intro) intro.style.display = 'flex';
+    if (intro) {
+      intro.style.display = 'flex';
+      console.log('✅ intro overlay shown');
+    } else {
+      console.warn('⚠️ introChoice element not found');
+    }
   }
 
   // Back from Sign Up → clear the form error and return to the intro choice
@@ -5665,6 +5671,9 @@
   // Expose handlers for inline onclick/onchange in the HTML
   window.proceedToAuth = proceedToAuth;
   window.showIntroChoice = showIntroChoice;
+  // Backup wiring in case inline onclick doesn't fire
+  const _getStartedBtn = document.getElementById('landingCTA');
+  if (_getStartedBtn) _getStartedBtn.addEventListener('click', showIntroChoice);
   window.backFromSignUp = backFromSignUp;
   window.chooseIntro = chooseIntro;
   window.backToIntro = backToIntro;
