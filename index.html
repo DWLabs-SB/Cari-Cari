@@ -1695,14 +1695,41 @@
         <span style="color:var(--text-sub);">Credits</span>
         <span id="profile-credits" style="color:var(--text); font-weight:600;">—</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:8px 0;">
+      <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--input-border);">
         <span style="color:var(--text-sub);">Login method</span>
         <span id="profile-method" style="color:var(--text); font-weight:600;">—</span>
+      </div>
+      <div style="padding:8px 0;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--text-sub);">Phone number</span>
+          <span id="profile-phone-display" style="color:var(--text); font-weight:600;">—</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <input type="tel" id="profile-phone-input" placeholder="Add your phone number" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--input-border); background:var(--bg); color:var(--text); font-size:0.9rem;">
+          <button id="profile-phone-save" style="padding:10px 14px; background:var(--accent); color:var(--accent-text); border:none; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.85rem;">Save</button>
+        </div>
+        <div id="profile-phone-msg" style="font-size:0.78rem; margin-top:6px;"></div>
       </div>
     </div>
     <button id="admin-open-btn" style="display:none; width:100%; padding:14px; margin-bottom:10px; background:var(--accent); color:var(--accent-text); border:none; border-radius:10px; font-weight:600; font-size:1rem; cursor:pointer;">🛠️ Admin Panel</button>
     <button id="signout-btn" style="width:100%; padding:14px; background:transparent; border:1px solid #e0455c; color:#e0455c; border-radius:10px; font-weight:600; font-size:1rem; cursor:pointer; transition:all 0.2s;">Sign Out</button>
     <button id="delete-account-btn" style="width:100%; margin-top:10px; padding:12px; background:transparent; border:none; color:var(--text-sub); font-size:0.82rem; cursor:pointer; text-decoration:underline;">Delete my account</button>
+  </div>
+</div>
+
+<!-- EDIT AD MODAL -->
+<div id="edit-ad-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:3200; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--card); border-radius:16px; max-width:400px; width:100%; max-height:88vh; overflow-y:auto; padding:22px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h2 style="margin:0;">Edit Ad</h2>
+      <div id="edit-ad-close" style="cursor:pointer; font-size:1.2rem; color:var(--text-sub);">✕</div>
+    </div>
+    <p style="color:var(--text-sub); font-size:0.82rem; margin-bottom:14px;">Update your ad text. Photos and boost time stay the same.</p>
+    <input type="text" id="edit-ad-name" placeholder="Business / item name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text);">
+    <input type="text" id="edit-ad-price" placeholder="Price (e.g. RM 10)" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text);">
+    <textarea id="edit-ad-desc" placeholder="Description" rows="4" style="width:100%; padding:12px; margin-bottom:12px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text); resize:vertical;"></textarea>
+    <div id="edit-ad-msg" style="font-size:0.82rem; margin-bottom:10px;"></div>
+    <button id="edit-ad-save" style="width:100%; padding:13px; background:var(--accent); color:var(--accent-text); border:none; border-radius:10px; font-weight:600; cursor:pointer;">Save Changes</button>
   </div>
 </div>
 
@@ -3927,9 +3954,11 @@
       const phoneMatch = sellerPhone && currentUser.phone && sellerPhone === currentUser.phone;
       isOwner = !!(emailMatch || phoneMatch);
     }
-    const deleteBtnHtml = isOwner
-      ? `<button class="ad-delete-btn" title="Delete this" style="margin-left:auto; background:transparent; border:none; color:#e0455c; cursor:pointer; font-size:1rem;">🗑️</button>`
+    const ownerControls = isOwner
+      ? `<button class="ad-edit-btn" title="Edit this" style="margin-left:auto; background:transparent; border:none; color:var(--text-sub); cursor:pointer; font-size:0.95rem;">✏️</button>
+         <button class="ad-delete-btn" title="Delete this" style="background:transparent; border:none; color:#e0455c; cursor:pointer; font-size:1rem;">🗑️</button>`
       : '';
+    const deleteBtnHtml = ownerControls;
 
     item.innerHTML = `
       <div class="feed-header">
@@ -4062,6 +4091,18 @@
       downCountEl.textContent = down;   // instant
       saveThumbs();                     // background
     });
+
+    // Edit button (owner only)
+    const editBtn = item.querySelector('.ad-edit-btn');
+    if (editBtn) {
+      editBtn.addEventListener('click', () => {
+        if (!item.dataset.adId) {
+          showToast('Please wait — ad is still saving');
+          return;
+        }
+        openEditAd(item);
+      });
+    }
 
     // Delete button (owner only)
     const deleteBtn = item.querySelector('.ad-delete-btn');
@@ -4339,6 +4380,15 @@
     async deleteAd(adId) {
       const response = await this.request(`/advertisements?id=eq.${adId}`, {
         method: 'DELETE'
+      });
+      return response.ok;
+    },
+
+    // Update an ad's text fields (not photos, not expiry)
+    async updateAd(adId, fields) {
+      const response = await this.request(`/advertisements?id=eq.${adId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(fields)
       });
       return response.ok;
     },
@@ -4895,13 +4945,17 @@
   // ===== ADMIN PANEL =====
   const ADMIN_EMAILS = ['quartno74@yahoo.com'];
   function isAdminUser() {
-    return currentUser && currentUser.email && ADMIN_EMAILS.includes(currentUser.email.toLowerCase());
+    if (!currentUser || !currentUser.email) return false;
+    const email = currentUser.email.trim().toLowerCase();
+    return ADMIN_EMAILS.includes(email);
   }
   let adminFoundUser = null;
 
   function refreshAdminButtonVisibility() {
     const btn = document.getElementById('admin-open-btn');
-    if (btn) btn.style.display = isAdminUser() ? 'block' : 'none';
+    const admin = isAdminUser();
+    console.log('Admin check — logged in as:', currentUser ? (currentUser.email || currentUser.phone || 'unknown') : 'none', '| isAdmin:', admin);
+    if (btn) btn.style.display = admin ? 'block' : 'none';
   }
 
   function openAdminPanel() {
@@ -5108,6 +5162,61 @@
       (currentUser.credits != null ? currentUser.credits : 1000) + ' credits';
     document.getElementById('profile-method').textContent =
       currentUser.email ? '📧 Email' : '📱 Phone';
+    // Phone number row
+    const phoneDisplay = document.getElementById('profile-phone-display');
+    const phoneInput = document.getElementById('profile-phone-input');
+    if (phoneDisplay) phoneDisplay.textContent = currentUser.phone || 'Not set';
+    if (phoneInput) phoneInput.value = currentUser.phone || '';
+    const msg = document.getElementById('profile-phone-msg');
+    if (msg) msg.textContent = '';
+  }
+
+  async function saveProfilePhone() {
+    const input = document.getElementById('profile-phone-input');
+    const msg = document.getElementById('profile-phone-msg');
+    const newPhone = input.value.trim();
+    if (!newPhone) { msg.style.color = '#e0455c'; msg.textContent = 'Enter a phone number'; return; }
+    // Basic validation: digits, spaces, +, -, at least 7 digits
+    const digits = newPhone.replace(/[^0-9]/g, '');
+    if (digits.length < 7) { msg.style.color = '#e0455c'; msg.textContent = 'That doesn\'t look like a valid number'; return; }
+    msg.style.color = 'var(--text-sub)'; msg.textContent = 'Saving...';
+    try {
+      // Update the user's existing signup row (match by email if they have one, else by old phone)
+      let filter = '';
+      if (currentUser.email) filter = `email=eq.${encodeURIComponent(currentUser.email)}`;
+      else if (currentUser.phone) filter = `phone=eq.${encodeURIComponent(currentUser.phone)}`;
+      else { msg.style.color = '#e0455c'; msg.textContent = 'Cannot update — no account key'; return; }
+
+      const resp = await supabaseClient.request(`/users?${filter}`, {
+        method: 'PATCH',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify({ phone: newPhone })
+      });
+
+      let updated = false;
+      if (resp.ok) {
+        const rows = await resp.json().catch(() => []);
+        updated = Array.isArray(rows) && rows.length > 0;
+      }
+
+      // If no row existed to update, create the signup row now (so admin can find them)
+      if (!updated) {
+        await supabaseClient.insertUser({
+          email: currentUser.email || null,
+          phone: newPhone,
+          name: currentUser.name || 'User',
+          credits: (currentUser.credits != null ? currentUser.credits : myCredits),
+          created_at: new Date().toISOString()
+        }).catch(() => {});
+      }
+
+      currentUser.phone = newPhone;
+      localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+      document.getElementById('profile-phone-display').textContent = newPhone;
+      msg.style.color = '#2e9e5b'; msg.textContent = '✅ Phone number saved';
+    } catch (e) {
+      msg.style.color = '#e0455c'; msg.textContent = 'Network error — try again';
+    }
   }
 
   function openProfile() {
@@ -5132,7 +5241,65 @@
   // Wire up profile controls
   document.getElementById('profile-btn').addEventListener('click', openProfile);
   document.getElementById('profile-close-btn').addEventListener('click', closeProfile);
+  // ===== EDIT AD =====
+  let editingItem = null;
+  function openEditAd(item) {
+    editingItem = item;
+    // Read current values from the feed item
+    const nameEl = item.querySelector('.feed-user');
+    const priceEl = item.querySelector('.feed-price');
+    const descEl = item.querySelector('.feed-text');
+    document.getElementById('edit-ad-name').value = nameEl ? nameEl.textContent.trim() : '';
+    document.getElementById('edit-ad-price').value = priceEl ? priceEl.textContent.replace(/RM|💰/g,'').trim() : '';
+    document.getElementById('edit-ad-desc').value = descEl ? descEl.textContent.trim() : '';
+    document.getElementById('edit-ad-msg').textContent = '';
+    document.getElementById('edit-ad-overlay').style.display = 'flex';
+  }
+
+  async function saveEditAd() {
+    if (!editingItem) return;
+    const adId = editingItem.dataset.adId;
+    const name = document.getElementById('edit-ad-name').value.trim();
+    const price = document.getElementById('edit-ad-price').value.trim();
+    const desc = document.getElementById('edit-ad-desc').value.trim();
+    const msg = document.getElementById('edit-ad-msg');
+    if (!name && !desc) { msg.style.color = '#e0455c'; msg.textContent = 'Add a name or description'; return; }
+    msg.style.color = 'var(--text-sub)'; msg.textContent = 'Saving...';
+    try {
+      const ok = await supabaseClient.updateAd(adId, {
+        business_name: name,
+        price: price,
+        description: desc
+      });
+      if (ok) {
+        // Update the feed item live
+        const nameEl = editingItem.querySelector('.feed-user');
+        const priceEl = editingItem.querySelector('.feed-price');
+        const descEl = editingItem.querySelector('.feed-text');
+        if (nameEl) nameEl.textContent = name;
+        if (priceEl && price) priceEl.textContent = `💰 ${price} RM`;
+        if (descEl) descEl.textContent = desc;
+        document.getElementById('edit-ad-overlay').style.display = 'none';
+        showToast('✅ Ad updated');
+      } else {
+        msg.style.color = '#e0455c'; msg.textContent = 'Could not save — try again';
+      }
+    } catch (e) {
+      msg.style.color = '#e0455c'; msg.textContent = 'Network error — try again';
+    }
+  }
+
+  document.getElementById('edit-ad-close').addEventListener('click', () => {
+    document.getElementById('edit-ad-overlay').style.display = 'none';
+  });
+  document.getElementById('edit-ad-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'edit-ad-overlay') e.target.style.display = 'none';
+  });
+  document.getElementById('edit-ad-save').addEventListener('click', saveEditAd);
+
+  // Wire the phone save button
   document.getElementById('signout-btn').addEventListener('click', signOut);
+  document.getElementById('profile-phone-save').addEventListener('click', saveProfilePhone);
   document.getElementById('delete-account-btn').addEventListener('click', async () => {
     if (!currentUser) return;
     const confirm1 = confirm('Delete your account permanently? Your ads and posts will remain but your account will be removed. This cannot be undone.');
