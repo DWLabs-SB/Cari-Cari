@@ -4393,6 +4393,20 @@
       return response.ok;
     },
 
+    // Backfill seller_phone on all of a user's ads (when they add a phone later)
+    async updateAdsSellerPhone({ email, phone }, newPhone) {
+      // Match the user's ads by their email or existing phone
+      let filter = '';
+      if (email) filter = `seller_email=eq.${encodeURIComponent(email)}`;
+      else if (phone) filter = `seller_phone=eq.${encodeURIComponent(phone)}`;
+      else return false;
+      const response = await this.request(`/advertisements?${filter}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ seller_phone: newPhone })
+      });
+      return response.ok;
+    },
+
     // Look up a user by phone (for phone-only login)
     async getUserByPhone(phone) {
       const response = await this.request(`/users?phone=eq.${encodeURIComponent(phone)}`);
@@ -5213,7 +5227,14 @@
       currentUser.phone = newPhone;
       localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
       document.getElementById('profile-phone-display').textContent = newPhone;
-      msg.style.color = '#2e9e5b'; msg.textContent = '✅ Phone number saved';
+
+      // Make the user's existing ads contactable with this phone
+      await supabaseClient.updateAdsSellerPhone(
+        { email: currentUser.email || null, phone: null },
+        newPhone
+      ).catch(() => {});
+
+      msg.style.color = '#2e9e5b'; msg.textContent = '✅ Phone saved — buyers can now contact you';
     } catch (e) {
       msg.style.color = '#e0455c'; msg.textContent = 'Network error — try again';
     }
