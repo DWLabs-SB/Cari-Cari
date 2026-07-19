@@ -4436,6 +4436,22 @@
       return data.length > 0 ? data[0] : null;
     },
 
+    // Secure phone login via the server-side Edge Function (password checked on server)
+    async loginViaFunction(phone, password) {
+      const url = `${this.url}/functions/v1/login`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': this.key,
+          'Authorization': `Bearer ${this.key}`
+        },
+        body: JSON.stringify({ phone, password })
+      });
+      if (!response.ok) return { error: 'network' };
+      return response.json();
+    },
+
     // Update a phone user's password (for reset)
     async updatePasswordByPhone(phone, newHash) {
       const response = await this.request(`/users?phone=eq.${encodeURIComponent(phone)}`, {
@@ -5454,8 +5470,35 @@
       return;
     }
 
-    // PATH 2: phone number → check users table with hashed password
+    // PATH 2: phone number → secure server-side login via Edge Function
     try {
+      const result = await supabaseClient.loginViaFunction(identifier, password);
+
+      if (result && result.ok && result.user) {
+        // Success via the secure server function
+        currentUser = {
+          name: result.user.name,
+          email: result.user.email,
+          phone: result.user.phone,
+          credits: result.user.credits
+        };
+        localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+        signInBtn.disabled = false;
+        signInBtn.textContent = originalText;
+        showApp();
+        return;
+      }
+
+      if (result && result.error === 'invalid') {
+        // Server checked and it's genuinely wrong
+        errorDiv.textContent = t('invalidCredentials');
+        errorDiv.style.display = 'block';
+        signInBtn.disabled = false;
+        signInBtn.textContent = originalText;
+        return;
+      }
+
+      // If the function had a network/other issue, fall back to the old direct method
       const profile = await supabaseClient.getUserByPhone(identifier);
       if (!profile || !profile.password_hash) {
         errorDiv.textContent = t('invalidCredentials');
