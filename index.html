@@ -1789,6 +1789,7 @@
     <input type="text" id="edit-ad-name" placeholder="Business / item name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text);">
     <input type="text" id="edit-ad-price" placeholder="Price (e.g. RM 10)" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text);">
     <textarea id="edit-ad-desc" placeholder="Description" rows="4" style="width:100%; padding:12px; margin-bottom:12px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text); resize:vertical;"></textarea>
+    <div id="edit-ad-location-box" style="width:100%; padding:12px; margin-bottom:12px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-sub); cursor:pointer;">📍 Pin your location (optional)</div>
     <div id="edit-ad-msg" style="font-size:0.82rem; margin-bottom:10px;"></div>
     <button id="edit-ad-save" style="width:100%; padding:13px; background:var(--accent); color:var(--accent-text); border:none; border-radius:10px; font-weight:600; cursor:pointer;">Save Changes</button>
   </div>
@@ -3300,12 +3301,25 @@
 
   // ===== LOCATION PICKER =====
   let selectedCoords = null;
+  let editCoords = null;
+  let mapPickerContext = 'composer'; // 'composer' or 'edit'
   const locationBox = document.getElementById('location-box');
   const mapModal = document.getElementById('map-modal');
   let map = null;
   let mapMarker = null;
 
   locationBox.addEventListener('click', () => {
+    mapPickerContext = 'composer';
+    openMapPicker();
+  });
+
+  // Edit modal: pin location button opens the same map picker
+  document.getElementById('edit-ad-location-box').addEventListener('click', () => {
+    mapPickerContext = 'edit';
+    openMapPicker();
+  });
+
+  function openMapPicker() {
     mapModal.classList.add('open');
     setTimeout(() => {
       if (!map) {
@@ -3317,19 +3331,35 @@
           maxZoom: 19
         }).addTo(map);
         map.on('click', (e) => {
-          selectedCoords = e.latlng;
+          if (mapPickerContext === 'edit') {
+            editCoords = e.latlng;
+          } else {
+            selectedCoords = e.latlng;
+          }
           if (mapMarker) map.removeLayer(mapMarker);
           mapMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map);
         });
+      } else {
+        // Recenter and let the invalidateSize fix rendering when reopened
+        setTimeout(() => map.invalidateSize(), 100);
       }
     }, 50);
-  });
+  }
 
   document.getElementById('map-confirm-btn').addEventListener('click', () => {
-    if (selectedCoords) {
-      locationBox.textContent = `📍 Location pinned`;
-      locationBox.classList.add('set');
+    if (mapPickerContext === 'edit') {
+      if (editCoords) {
+        const locBox = document.getElementById('edit-ad-location-box');
+        locBox.textContent = '📍 Location pinned — tap to change';
+        locBox.style.color = 'var(--accent)';
+      }
       mapModal.classList.remove('open');
+    } else {
+      if (selectedCoords) {
+        locationBox.textContent = `📍 Location pinned`;
+        locationBox.classList.add('set');
+        mapModal.classList.remove('open');
+      }
     }
   });
 
@@ -5688,6 +5718,16 @@
     document.getElementById('edit-ad-price').value = priceEl ? priceEl.textContent.replace(/RM|💰/g,'').trim() : '';
     document.getElementById('edit-ad-desc').value = descEl ? descEl.textContent.trim() : '';
     document.getElementById('edit-ad-msg').textContent = '';
+    // Location: show whether this ad already has a pin
+    editCoords = null;
+    const locBox = document.getElementById('edit-ad-location-box');
+    if (item.dataset.lat && item.dataset.lng) {
+      locBox.textContent = '📍 Location pinned — tap to change';
+      locBox.style.color = 'var(--accent)';
+    } else {
+      locBox.textContent = '📍 Pin your location (optional)';
+      locBox.style.color = 'var(--text-sub)';
+    }
     document.getElementById('edit-ad-overlay').style.display = 'flex';
   }
 
@@ -5701,11 +5741,17 @@
     if (!name && !desc) { msg.style.color = '#e0455c'; msg.textContent = 'Add a name or description'; return; }
     msg.style.color = 'var(--text-sub)'; msg.textContent = 'Saving...';
     try {
-      const ok = await supabaseClient.updateAd(adId, {
+      const fields = {
         business_name: name,
         price: price,
         description: desc
-      });
+      };
+      // If a new location was pinned during this edit, include it
+      if (editCoords) {
+        fields.lat = editCoords.lat;
+        fields.lng = editCoords.lng;
+      }
+      const ok = await supabaseClient.updateAd(adId, fields);
       if (ok) {
         // Update the feed item live
         const nameEl = editingItem.querySelector('.feed-user');
@@ -5714,8 +5760,13 @@
         if (nameEl) nameEl.textContent = name;
         if (priceEl && price) priceEl.textContent = `💰 ${price} RM`;
         if (descEl) descEl.textContent = desc;
+        // Store new coords on the item so Directions works right away
+        if (editCoords) {
+          editingItem.dataset.lat = editCoords.lat;
+          editingItem.dataset.lng = editCoords.lng;
+        }
         document.getElementById('edit-ad-overlay').style.display = 'none';
-        showToast('✅ Ad updated');
+        showToast(editCoords ? '✅ Ad updated — location pinned' : '✅ Ad updated');
       } else {
         msg.style.color = '#e0455c'; msg.textContent = 'Could not save — try again';
       }
