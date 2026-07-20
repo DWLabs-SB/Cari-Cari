@@ -5692,19 +5692,31 @@
     if (email) {
       supabaseClient.auth_signup(email, password)
         .then(async (data) => {
-          if (data.error) {
-            console.warn('⚠️ Signup error:', data.error);
-            errorDiv.textContent = data.error.message || 'Signup failed';
+          // Fail if there's an explicit error OR no real user id came back.
+          // (A genuine signup always returns a user id. Without it, the account
+          //  was NOT created — so we must not create an orphaned profile row.)
+          const newUserId = data && (data.id || (data.user && data.user.id));
+          if (data.error || !newUserId) {
+            console.warn('⚠️ Signup error:', data.error || 'no user id returned');
+            const msg = (data.error && (data.error.message || data.error.msg))
+              || (data.msg)
+              || 'Signup failed — this email may already be registered. Try signing in.';
+            errorDiv.textContent = msg;
             errorDiv.style.display = 'block';
             signUpBtn.disabled = false;
             signUpBtn.textContent = originalText;
             return;
           }
           console.log('✅ Account created (email)');
-          // Save profile row, then send to Sign In (don't auto-login)
-          supabaseClient.insertUser({
-            email, name, phone, credits: 1000, created_at: new Date().toISOString()
-          }).catch(err => console.warn('⚠️ Profile save error:', err));
+          // Auth account is real — now save the linked profile row.
+          try {
+            await supabaseClient.insertUser({
+              auth_id: newUserId,
+              email, name, phone, credits: 1000, created_at: new Date().toISOString()
+            });
+          } catch (err) {
+            console.warn('⚠️ Profile save error:', err);
+          }
           signUpBtn.disabled = false;
           signUpBtn.textContent = originalText;
           showSignIn();
