@@ -4324,7 +4324,7 @@
     },
     
     async getUser(email) {
-      const response = await this.request(`/users?email=eq.${email}`);
+      const response = await this.request(`/users?email=eq.${email}&select=name,email,phone,credits,security_question`);
       const data = await response.json();
       return data.length > 0 ? data[0] : null;
     },
@@ -4458,9 +4458,9 @@
       return response.ok;
     },
 
-    // Look up a user by phone (for phone-only login)
+    // Look up a user by phone (for signup dup-check and security-question reset)
     async getUserByPhone(phone) {
-      const response = await this.request(`/users?phone=eq.${encodeURIComponent(phone)}`);
+      const response = await this.request(`/users?phone=eq.${encodeURIComponent(phone)}&select=name,email,phone,credits,security_question,security_answer_hash`);
       if (!response.ok) return null;
       const data = await response.json();
       return data.length > 0 ? data[0] : null;
@@ -5626,28 +5626,13 @@
         return;
       }
 
-      // If the function had a network/other issue, fall back to the old direct method
-      const profile = await supabaseClient.getUserByPhone(identifier);
-      if (!profile || !profile.password_hash) {
-        errorDiv.textContent = t('invalidCredentials');
-        errorDiv.style.display = 'block';
-        signInBtn.disabled = false;
-        signInBtn.textContent = originalText;
-        return;
-      }
-      const enteredHash = await hashPassword(password);
-      if (enteredHash !== profile.password_hash) {
-        errorDiv.textContent = t('invalidCredentials');
-        errorDiv.style.display = 'block';
-        signInBtn.disabled = false;
-        signInBtn.textContent = originalText;
-        return;
-      }
-      currentUser = { name: profile.name, email: profile.email, phone: profile.phone, credits: profile.credits };
-      localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+      // Server function had a network/other issue — no client-side hash fallback
+      // (hashes are no longer readable by the browser, by design).
+      errorDiv.textContent = 'Connection problem — please try again';
+      errorDiv.style.display = 'block';
       signInBtn.disabled = false;
       signInBtn.textContent = originalText;
-      showApp();
+      return;
     } catch (err) {
       console.error('❌ Phone signin error:', err);
       errorDiv.textContent = 'Network error';
