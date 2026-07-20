@@ -3816,6 +3816,12 @@
       adPostBtnRef.textContent = originalBtnText;
     }
 
+    // ✅ Safety net: rebuild phone token if missing (e.g. restored session).
+    // Phone accounts have a phone but no real Supabase JWT.
+    if ((!currentAuthToken || !currentAuthToken.length) && currentUser && currentUser.phone) {
+      currentAuthToken = `phone_${currentUser.phone}_temp`;
+    }
+
     // ✅ SPEND CREDITS VIA EDGE FUNCTION (server-side verification)
     const spendResult = await supabaseClient.spendCredits({
       user_access_token: currentAuthToken,
@@ -4199,6 +4205,11 @@
     if (myCredits < selectedBoostCost) {
       showToast('Not enough credits');
       return;
+    }
+
+    // ✅ Safety net: rebuild phone token if missing (e.g. restored session)
+    if ((!currentAuthToken || !currentAuthToken.length) && currentUser && currentUser.phone) {
+      currentAuthToken = `phone_${currentUser.phone}_temp`;
     }
 
     // ✅ SPEND CREDITS VIA EDGE FUNCTION (server-side verification)
@@ -5442,7 +5453,9 @@
 
   function signOut() {
     localStorage.removeItem('cariCariCurrentUser');
+    localStorage.removeItem('cariCariAuthToken');
     currentUser = null;
+    currentAuthToken = null;
     closeProfile();
     document.getElementById('app').classList.remove('active');
     document.getElementById('authContainer').classList.add('hidden');
@@ -5526,7 +5539,9 @@
       });
       // Clear local session regardless
       localStorage.removeItem('cariCariCurrentUser');
+      localStorage.removeItem('cariCariAuthToken');
       currentUser = null;
+      currentAuthToken = null;
       showToast(ok ? '✅ Your account has been deleted' : 'Account removed locally');
       setTimeout(() => location.reload(), 1200);
     } catch (e) {
@@ -5573,6 +5588,7 @@
           }
           // ✅ SAVE THE TOKEN FOR EDGE FUNCTIONS
           currentAuthToken = data.access_token;
+          localStorage.setItem('cariCariAuthToken', data.access_token);
           
           // Load real profile
           let profile = null;
@@ -5794,6 +5810,16 @@
   const savedUser = localStorage.getItem('cariCariCurrentUser');
   if (savedUser) {
     currentUser = JSON.parse(savedUser);
+    // Restore the auth token so credit operations work after a page reload
+    if (currentUser.phone && !currentUser.email) {
+      // Phone user: rebuild the temp token from their number
+      currentAuthToken = `phone_${currentUser.phone}_temp`;
+    } else if (currentUser.email) {
+      // Email user: restore their saved Supabase JWT (may be expired;
+      // if so, a credit action will prompt them to log in again)
+      const savedToken = localStorage.getItem('cariCariAuthToken');
+      if (savedToken) currentAuthToken = savedToken;
+    }
     showApp();
   }
 
