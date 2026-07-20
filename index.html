@@ -1802,6 +1802,22 @@
       <div id="admin-close" style="cursor:pointer; font-size:1.2rem; color:var(--text-sub);">✕</div>
     </div>
 
+    <!-- Quick stats -->
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <div style="flex:1; background:var(--input-bg); border:1px solid var(--input-border); border-radius:12px; padding:12px; text-align:center;">
+        <div id="admin-stat-users" style="font-size:1.5rem; font-weight:800; color:var(--accent);">–</div>
+        <div style="font-size:0.72rem; color:var(--text-sub);">Total users</div>
+      </div>
+      <div style="flex:1; background:var(--input-bg); border:1px solid var(--input-border); border-radius:12px; padding:12px; text-align:center;">
+        <div id="admin-stat-ads" style="font-size:1.5rem; font-weight:800; color:var(--accent);">–</div>
+        <div style="font-size:0.72rem; color:var(--text-sub);">Active ads</div>
+      </div>
+      <div style="flex:1; background:var(--input-bg); border:1px solid var(--input-border); border-radius:12px; padding:12px; text-align:center;">
+        <div id="admin-stat-feedback" style="font-size:1.5rem; font-weight:800; color:var(--accent);">–</div>
+        <div style="font-size:0.72rem; color:var(--text-sub);">Feedback</div>
+      </div>
+    </div>
+
     <p style="color:var(--text-sub); font-size:0.85rem; margin-bottom:10px;">Look up a user by phone number or email.</p>
     <div style="display:flex; gap:8px; margin-bottom:14px;">
       <input type="text" id="admin-search" placeholder="Phone or email" style="flex:1; padding:12px; border-radius:10px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text);">
@@ -4538,6 +4554,22 @@
       return response.json();
     },
 
+    // Count rows in a table (for admin stats). Uses PostgREST count header.
+    async getCount(table, extraFilter) {
+      const path = `/${table}?select=id${extraFilter ? '&' + extraFilter : ''}`;
+      const response = await this.request(path, {
+        method: 'HEAD',
+        headers: { 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' }
+      });
+      // The total count comes back in the Content-Range header: "0-0/123"
+      const cr = response.headers.get('content-range');
+      if (cr && cr.includes('/')) {
+        const total = cr.split('/')[1];
+        return total === '*' ? 0 : parseInt(total, 10);
+      }
+      return 0;
+    },
+
     async getComments(adId) {
       const response = await this.request(`/ad_comments?ad_id=eq.${adId}&order=created_at.asc`);
       if (!response.ok) return [];
@@ -5324,6 +5356,31 @@
     document.getElementById('admin-result').style.display = 'none';
     document.getElementById('admin-msg').textContent = '';
     adminFoundUser = null;
+    loadAdminStats();
+  }
+
+  // Load user/ad/feedback counts into the admin stats bar
+  async function loadAdminStats() {
+    const uEl = document.getElementById('admin-stat-users');
+    const aEl = document.getElementById('admin-stat-ads');
+    const fEl = document.getElementById('admin-stat-feedback');
+    if (uEl) uEl.textContent = '…';
+    if (aEl) aEl.textContent = '…';
+    if (fEl) fEl.textContent = '…';
+    try {
+      const users = await supabaseClient.getCount('users');
+      if (uEl) uEl.textContent = users;
+    } catch (e) { if (uEl) uEl.textContent = '?'; }
+    try {
+      // Active ads = advertisements not yet expired (or no expiry set)
+      const nowIso = new Date().toISOString();
+      const ads = await supabaseClient.getCount('advertisements', `or=(expires_at.gt.${nowIso},expires_at.is.null)`);
+      if (aEl) aEl.textContent = ads;
+    } catch (e) { if (aEl) aEl.textContent = '?'; }
+    try {
+      const fb = await supabaseClient.getCount('feedback');
+      if (fEl) fEl.textContent = fb;
+    } catch (e) { if (fEl) fEl.textContent = '?'; }
   }
 
   async function adminSearch() {
