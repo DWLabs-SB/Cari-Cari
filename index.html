@@ -3574,6 +3574,7 @@
         addFeedItem({
           isAd: false,
           text: ad.description || '',
+          posterName: ad.seller_name || null,
           adId: ad.id,
           thumbsUp: ad.thumbs_up || 0,
           thumbsDown: ad.thumbs_down || 0,
@@ -3730,6 +3731,7 @@
     addFeedItem({
       isAd: false,
       text: text,
+      posterName: currentUser ? currentUser.name : null,
       sellerEmail: currentUser ? (currentUser.email || null) : null,
       sellerPhone: currentUser ? (currentUser.phone || null) : null
     });
@@ -3945,7 +3947,7 @@
     }, 500);
   });
 
-  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category, photos, adId, thumbsUp, thumbsDown, lat, lng, sellerEmail, sellerPhone }) {
+  function addFeedItem({ isAd, name, price, text, location, boosted, boostLabel, category, photos, adId, thumbsUp, thumbsDown, lat, lng, sellerEmail, sellerPhone, posterName }) {
     const feedContainer = document.getElementById('feed-container');
     const item = document.createElement('div');
     item.className = 'feed-item just-posted' + (boosted ? ' is-boosted' : '');
@@ -3966,7 +3968,16 @@
     const badgeHtml = isAd
       ? (boosted ? `<span class="feed-badge boosted">🚀 Boosted</span>` : `<span class="feed-badge">AD</span>`)
       : '';
-    const nameHtml = isAd ? (name || 'Your business') : 'You';
+    const nameHtml = isAd ? (name || 'Your business') : (posterName || ((currentUser && currentUser.name) ? currentUser.name : 'You'));
+    // Build avatar initials from whatever name we're displaying (not hardcoded)
+    const displayNameForAvatar = isAd ? (name || 'Your business') : (posterName || ((currentUser && currentUser.name) ? currentUser.name : 'You'));
+    const avatarInitials = displayNameForAvatar
+      .trim()
+      .split(/\s+/)
+      .map(w => w[0] || '')
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || '?';
     const priceHtml = isAd && price ? `<div class="feed-item-price">${price} RM</div>` : '';
     const locationHtml = isAd && location ? `<div class="feed-location">${location}</div>` : '';
     let mediaHtml = '';
@@ -4005,7 +4016,7 @@
 
     item.innerHTML = `
       <div class="feed-header">
-        <div class="avatar">DS</div>
+        <div class="avatar">${avatarInitials}</div>
         <div>
           <div class="feed-user">${nameHtml}</div>
           <div class="feed-meta">Just now</div>
