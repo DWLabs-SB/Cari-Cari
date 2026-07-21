@@ -1246,6 +1246,7 @@
       <option value="services" id="catOptServices">🔧 Services</option>
       <option value="product" id="catOptProduct">📦 Product</option>
       <option value="minimarket" id="catOptMinimarket">🏪 Minimarket (Kedai Runcit)</option>
+      <option value="work" id="catOptWork">💼 Work (Jawatan Kosong)</option>
     </select>
     <div class="icon-btn" id="language-toggle" title="Toggle language">
       <span id="lang-display">ENG</span>
@@ -1376,6 +1377,10 @@
           <div class="category-btn" data-category="minimarket">
             <span style="font-size: 1.3rem;">🏪</span>
             <span>Mini Supermarket</span>
+          </div>
+          <div class="category-btn" data-category="work">
+            <span style="font-size: 1.3rem;">💼</span>
+            <span>Work / Vacancy</span>
           </div>
         </div>
       </div>
@@ -2061,6 +2066,7 @@
       catServices: '🔧 Services',
       catProduct: '📦 Product',
       catMinimarket: '🏪 Minimarket (Kedai Runcit)',
+      catWork: '💼 Work (Jawatan Kosong)',
       postTab: '📝 Post',
       adTab: '🏪 My Ads',
       photoLabel: 'Add photos of your shop or product (up to 3)'
@@ -2098,6 +2104,7 @@
       catServices: '🔧 Perkhidmatan',
       catProduct: '📦 Produk',
       catMinimarket: '🏪 Kedai Runcit',
+      catWork: '💼 Jawatan Kosong',
       postTab: '📝 Pos',
       adTab: '🏪 Iklan Saya',
       photoLabel: 'Tambah foto kedai atau produk anda (sehingga 3)'
@@ -2136,6 +2143,7 @@
       catServices: '🔧 服务',
       catProduct: '📦 产品',
       catMinimarket: '🏪 杂货店',
+      catWork: '💼 招聘',
       postTab: '📝 帖子',
       adTab: '🏪 我的广告',
       photoLabel: '添加你的商店或产品照片（最多3张）'
@@ -2211,6 +2219,8 @@
     if (catOptProduct) catOptProduct.textContent = t.catProduct;
     const catOptMinimarket = document.getElementById('catOptMinimarket');
     if (catOptMinimarket) catOptMinimarket.textContent = t.catMinimarket;
+    const catOptWork = document.getElementById('catOptWork');
+    if (catOptWork && t.catWork) catOptWork.textContent = t.catWork;
 
     // Update composer tabs
     const postTabLabel = document.getElementById('postTabLabel');
