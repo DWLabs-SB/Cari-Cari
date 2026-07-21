@@ -1079,6 +1079,7 @@
       Cari-Cari connects local businesses with their community. Share what you sell, showcase your services, and reach customers searching for exactly what you offer — all from your phone.
     </div>
     <button class="landing-cta" id="landingCTA" onclick="showIntroChoice()">Get Started</button>
+    <div id="landing-user-count" style="margin-top:14px; font-size:0.85rem; color:var(--text-sub); opacity:0; transition:opacity 0.4s;"></div>
   </div>
 
   <div class="landing-footer" id="landingFooter">
@@ -1748,7 +1749,15 @@
     </div>
     <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:24px;">
       <div id="profile-avatar" style="width:72px; height:72px; border-radius:50%; background:var(--accent); color:var(--accent-text); display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:700; margin-bottom:12px;">?</div>
-      <div id="profile-name" style="font-size:1.2rem; font-weight:600; color:var(--text);">—</div>
+      <div style="display:flex; align-items:center; gap:6px; justify-content:center;">
+        <div id="profile-name" style="font-size:1.2rem; font-weight:600; color:var(--text);">—</div>
+        <span id="profile-name-edit" title="Edit name" style="cursor:pointer; font-size:0.9rem; color:var(--text-sub);">✏️</span>
+      </div>
+      <div id="profile-name-edit-row" style="display:none; gap:8px; margin-top:8px; width:100%; max-width:280px;">
+        <input type="text" id="profile-name-input" placeholder="Your name" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--input-border); background:var(--bg); color:var(--text); font-size:0.9rem;">
+        <button id="profile-name-save" style="padding:10px 14px; background:var(--accent); color:var(--accent-text); border:none; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.85rem;">Save</button>
+      </div>
+      <div id="profile-name-msg" style="font-size:0.78rem; margin-top:6px;"></div>
       <div id="profile-contact" style="font-size:0.9rem; color:var(--text-sub); margin-top:4px;">—</div>
     </div>
     <div style="background:var(--input-bg); border-radius:12px; padding:16px; margin-bottom:20px;">
@@ -4684,6 +4693,19 @@
       return response.ok;
     },
 
+    // Update seller_name on all of a user's ads/posts (when they rename themselves)
+    async updateAdsSellerName({ email, phone }, newName) {
+      let filter = '';
+      if (email) filter = `seller_email=eq.${encodeURIComponent(email)}`;
+      else if (phone) filter = `seller_phone=eq.${encodeURIComponent(phone)}`;
+      else return false;
+      const response = await this.request(`/advertisements?${filter}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ seller_name: newName })
+      });
+      return response.ok;
+    },
+
     // Look up a user by phone (for signup dup-check and security-question reset)
     async getUserByPhone(phone) {
       const response = await this.request(`/users?phone=eq.${encodeURIComponent(phone)}&select=name,email,phone,credits,security_question,security_answer_hash`);
@@ -4729,17 +4751,12 @@
       return data.length > 0 ? data[0].credits : null;
     },
 
-    // Save a user's credits balance (by email or phone)
+    // Save a user's credits balance — DISABLED for security.
+    // Credits are only ever changed via the secure Edge Function (service_role).
+    // Direct client writes with the anon key were a cheating hole, so this is a no-op.
     async setUserCredits({ email, phone }, credits) {
-      let filter = '';
-      if (email) filter = `email=eq.${encodeURIComponent(email)}`;
-      else if (phone) filter = `phone=eq.${encodeURIComponent(phone)}`;
-      else return false;
-      const response = await this.request(`/users?${filter}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ credits })
-      });
-      return response.ok;
+      console.warn('setUserCredits is disabled — credits change only via Edge Function.');
+      return false;
     },
 
     // ✅ NEW: Grant credits via Edge Function (admin only)
@@ -5321,13 +5338,10 @@
       if (bal != null) {
         myCredits = bal;
       } else {
-        // No row/credits found — create the user row with the free starting balance
+        // No row/credits found — create the user row with the free starting balance.
+        // (Credits are set at row creation via insert; they can't be changed later
+        //  except through the secure Edge Function.)
         myCredits = 1000;
-        const saved = await supabaseClient.setUserCredits(
-          { email: currentUser.email || null, phone: currentUser.phone || null },
-          myCredits
-        ).catch(() => false);
-        // If update affected nothing (row didn't exist), insert the row
         const check = await supabaseClient.getUserCredits({
           email: currentUser.email || null,
           phone: currentUser.phone || null
@@ -5351,16 +5365,12 @@
   // Save the current balance to the database
   async function persistCredits() {
     if (!currentUser) return;
-    // Keep the local snapshot in sync so all displays agree
+    // Keep the local snapshot in sync so all displays agree.
+    // NOTE: We do NOT write credits to the database here anymore.
+    // All credit changes go through the secure Edge Function (spend/grant),
+    // which updates the balance server-side. Writing here with the anon key
+    // would be a cheating hole (a user could set any balance).
     currentUser.credits = myCredits;
-    try {
-      await supabaseClient.setUserCredits(
-        { email: currentUser.email || null, phone: currentUser.phone || null },
-        myCredits
-      );
-    } catch (e) {
-      console.warn('Could not save credits:', e.message);
-    }
   }
 
   // ===== ADMIN PANEL =====
@@ -5605,14 +5615,36 @@
     }
   });
 
+  // Mask an email for display: keep first, middle & last chars of the local part,
+  // replace the rest with x. e.g. "desmond@gmail.com" -> "d***d@gmail.com"
+  function maskEmail(email) {
+    if (!email || !email.includes('@')) return email || '—';
+    const [local, domain] = email.split('@');
+    let maskedLocal;
+    if (local.length <= 2) {
+      maskedLocal = local[0] + 'xxxx';
+    } else if (local.length <= 4) {
+      maskedLocal = local[0] + 'xxxx' + local[local.length - 1];
+    } else {
+      const mid = local[Math.floor(local.length / 2)];
+      maskedLocal = local[0] + 'xxx' + mid + 'xxx' + local[local.length - 1];
+    }
+    return maskedLocal + '@' + domain;
+  }
+
   function populateProfile() {
     if (!currentUser) return;
     const name = currentUser.name || 'User';
     const initial = name.trim().charAt(0).toUpperCase() || '?';
     document.getElementById('profile-avatar').textContent = initial;
     document.getElementById('profile-name').textContent = name;
-    // Show whichever identifier they have
-    const contact = currentUser.email || currentUser.phone || '—';
+    // Reset the name-edit row each time the profile opens
+    const nameEditRow = document.getElementById('profile-name-edit-row');
+    if (nameEditRow) nameEditRow.style.display = 'none';
+    const nameMsg = document.getElementById('profile-name-msg');
+    if (nameMsg) nameMsg.textContent = '';
+    // Show whichever identifier they have — email is masked for privacy
+    const contact = currentUser.email ? maskEmail(currentUser.email) : (currentUser.phone || '—');
     document.getElementById('profile-contact').textContent = contact;
     // Use the live balance (same source as the header pill), not the stale signup snapshot
     document.getElementById('profile-credits').textContent = myCredits + ' credits';
@@ -5677,6 +5709,55 @@
       ).catch(() => {});
 
       msg.style.color = '#2e9e5b'; msg.textContent = '✅ Phone saved — buyers can now contact you';
+    } catch (e) {
+      msg.style.color = '#e0455c'; msg.textContent = 'Network error — try again';
+    }
+  }
+
+  // ===== EDIT PROFILE NAME =====
+  function toggleNameEdit(show) {
+    const row = document.getElementById('profile-name-edit-row');
+    const input = document.getElementById('profile-name-input');
+    if (show) {
+      input.value = currentUser ? (currentUser.name || '') : '';
+      row.style.display = 'flex';
+      input.focus();
+    } else {
+      row.style.display = 'none';
+    }
+  }
+
+  async function saveProfileName() {
+    const input = document.getElementById('profile-name-input');
+    const msg = document.getElementById('profile-name-msg');
+    const newName = input.value.trim();
+    if (!newName) { msg.style.color = '#e0455c'; msg.textContent = 'Enter a name'; return; }
+    if (newName.length > 40) { msg.style.color = '#e0455c'; msg.textContent = 'Name is too long'; return; }
+    msg.style.color = 'var(--text-sub)'; msg.textContent = 'Saving...';
+    try {
+      let filter = '';
+      if (currentUser.email) filter = `email=eq.${encodeURIComponent(currentUser.email)}`;
+      else if (currentUser.phone) filter = `phone=eq.${encodeURIComponent(currentUser.phone)}`;
+      else { msg.style.color = '#e0455c'; msg.textContent = 'Cannot update — no account key'; return; }
+
+      const resp = await supabaseClient.request(`/users?${filter}`, {
+        method: 'PATCH',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify({ name: newName })
+      });
+      if (!resp.ok) { msg.style.color = '#e0455c'; msg.textContent = 'Could not save — try again'; return; }
+
+      currentUser.name = newName;
+      localStorage.setItem('cariCariCurrentUser', JSON.stringify(currentUser));
+      document.getElementById('profile-name').textContent = newName;
+      document.getElementById('profile-avatar').textContent = newName.trim().charAt(0).toUpperCase() || '?';
+      // Update the name shown on all of this user's existing posts/ads
+      await supabaseClient.updateAdsSellerName(
+        { email: currentUser.email || null, phone: currentUser.phone || null },
+        newName
+      ).catch(() => {});
+      toggleNameEdit(false);
+      msg.style.color = '#2e9e5b'; msg.textContent = '✅ Name updated';
     } catch (e) {
       msg.style.color = '#e0455c'; msg.textContent = 'Network error — try again';
     }
@@ -5786,6 +5867,8 @@
   // Wire the phone save button
   document.getElementById('signout-btn').addEventListener('click', signOut);
   document.getElementById('profile-phone-save').addEventListener('click', saveProfilePhone);
+  document.getElementById('profile-name-edit').addEventListener('click', () => toggleNameEdit(true));
+  document.getElementById('profile-name-save').addEventListener('click', saveProfileName);
   document.getElementById('delete-account-btn').addEventListener('click', async () => {
     if (!currentUser) return;
     const confirm1 = confirm('Delete your account permanently? Your ads and posts will remain but your account will be removed. This cannot be undone.');
@@ -6095,6 +6178,18 @@
     }
     showApp();
   }
+
+  // Load the community user count for the landing page (social proof)
+  (async () => {
+    try {
+      const count = await supabaseClient.getCount('users');
+      const el = document.getElementById('landing-user-count');
+      if (el && count > 0) {
+        el.textContent = `🌟 Join ${count}+ people already on Cari-Cari`;
+        el.style.opacity = '1';
+      }
+    } catch (e) { /* silently skip if it fails */ }
+  })();
 
 </script>
 <div id="photo-lightbox" onclick="closePhotoLightbox()" style="display:none; position:fixed; inset:0; z-index:12000; background:rgba(0,0,0,0.92); align-items:center; justify-content:center; cursor:zoom-out;">
