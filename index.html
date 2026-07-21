@@ -1318,7 +1318,7 @@
       </div>
       <div class="hiw-row">
         <div class="hiw-dot"></div>
-        <div id="hiw-step7">Posting ads: <strong>10 Credits</strong> (stays 1 week) · Boosting to carousel: <strong>50 Credits per day</strong> (e.g. 500 credits = 10 days)</div>
+        <div id="hiw-step7">Posting ads: <strong>10 Credits</strong> (stays 15 days) · Boosting to carousel: <strong>50 Credits per day</strong> (e.g. 500 credits = 10 days)</div>
       </div>
     </div>
   </div>
@@ -1419,7 +1419,7 @@
       <div id="sales-warning" class="sales-warning">
         ⚠️ Your ad text contains sales language. Switch to "My Ads" tab to ensure proper classification. <a id="sales-warning-switch" style="cursor:pointer; text-decoration:underline;">Switch</a>
       </div>
-      <div class="post-cost-note">This will use 10 credits — your ad stays for 1 week</div>
+      <div class="post-cost-note">This will use 10 credits — your ad stays for 15 days</div>
       <button class="post-btn">Post Ad</button>
     </div>
   </div>
@@ -2055,7 +2055,7 @@
       hiwStep4: 'Posting <strong>Ads</strong> costs <strong>Credits</strong>, and boosting them to reach more people costs extra <strong>Credits</strong>',
       hiwStep5: 'Upload a photo of your stall',
       hiwStep6: 'Pin your location',
-      hiwStep7: 'Posting ads: <strong>10 Credits</strong> (stays 1 week) · Boosting to carousel: <strong>50 Credits per day</strong> (e.g. 500 credits = 10 days)',
+      hiwStep7: 'Posting ads: <strong>10 Credits</strong> (stays 15 days) · Boosting to carousel: <strong>50 Credits per day</strong> (e.g. 500 credits = 10 days)',
       catAll: '🔍 All — search a category',
       catEatery: '🍽️ Eatery',
       catServices: '🔧 Services',
@@ -2092,7 +2092,7 @@
       hiwStep4: 'Menyiarkan <strong>Iklan</strong> memerlukan <strong>Kredit</strong>, dan menggandakannya untuk menjangkau lebih ramai orang memerlukan <strong>Kredit</strong> tambahan',
       hiwStep5: 'Muat naik foto gerai anda',
       hiwStep6: 'Pasak lokasi anda',
-      hiwStep7: 'Menyiarkan iklan: <strong>10 Kredit</strong> (kekal 1 minggu) · Boost ke karusel: <strong>50 Kredit sehari</strong> (cth: 500 kredit = 10 hari)',
+      hiwStep7: 'Menyiarkan iklan: <strong>10 Kredit</strong> (kekal 15 hari) · Boost ke karusel: <strong>50 Kredit sehari</strong> (cth: 500 kredit = 10 hari)',
       catAll: '🔍 Semua — cari kategori',
       catEatery: '🍽️ Kedai Makan',
       catServices: '🔧 Perkhidmatan',
@@ -2130,7 +2130,7 @@
       hiwStep4: '发布<strong>广告</strong>需要<strong>积分</strong>，推广广告以接触更多人需要额外的<strong>积分</strong>',
       hiwStep5: '上传你的摊位照片',
       hiwStep6: '标记你的位置',
-      hiwStep7: '发布广告：<strong>10 积分</strong>（保留1周）· 推广到轮播：<strong>每天 50 积分</strong>（例如 500 积分 = 10 天）',
+      hiwStep7: '发布广告：<strong>10 积分</strong>（保留15天）· 推广到轮播：<strong>每天 50 积分</strong>（例如 500 积分 = 10 天）',
       catAll: '🔍 全部 — 搜索类别',
       catEatery: '🍽️ 餐饮',
       catServices: '🔧 服务',
@@ -3534,7 +3534,7 @@
     if (composerBoostOn && composerBoostCost) {
       postCostNote.textContent = `This will use ${total} credits (10 post + ${composerBoostCost} boost) — shown in carousel for ${composerBoostDays} day${composerBoostDays>1?'s':''}`;
     } else {
-      postCostNote.textContent = 'This will use 10 credits — your ad stays for 1 week';
+      postCostNote.textContent = 'This will use 10 credits — your ad stays for 15 days';
     }
   }
 
@@ -3946,9 +3946,9 @@
     const adCost = 10;
     const boostCost = (isAdTab && composerBoostOn) ? composerBoostCost : 0;
     const totalCost = adCost + boostCost;
-    // Lifespan: boosted ads live for the boosted days; normal ads live 1 week
+    // Lifespan: boosted ads live for the boosted days; normal ads live 15 days
     const boostDays = (isAdTab && composerBoostOn && composerBoostDays) ? composerBoostDays : 0;
-    const lifespanDays = boostDays > 0 ? boostDays : 7;
+    const lifespanDays = boostDays > 0 ? boostDays : 15;
 
     if (!selectedCategory) {
       postCostNote.textContent = 'Select a category first';
@@ -4007,11 +4007,14 @@
       currentAuthToken = `phone_${currentUser.phone}_temp`;
     }
 
+    // Charge by the identifier that matches the token type, so the server's
+    // token check lines up (phone token → charge phone; email JWT → charge email).
+    const isPhoneToken = currentAuthToken && currentAuthToken.startsWith('phone_');
     // ✅ SPEND CREDITS VIA EDGE FUNCTION (server-side verification)
     const spendResult = await supabaseClient.spendCredits({
       user_access_token: currentAuthToken,
-      target_email: currentUser.email,
-      target_phone: currentUser.phone,
+      target_email: isPhoneToken ? null : currentUser.email,
+      target_phone: isPhoneToken ? currentUser.phone : (currentUser.email ? null : currentUser.phone),
       amount: totalCost
     });
 
@@ -4179,6 +4182,10 @@
     const directionsActionHtml = (isAd && coordLat != null && coordLng != null)
       ? `<button class="action-btn directions-btn" data-lat="${coordLat}" data-lng="${coordLng}">🧭 Directions</button>`
       : '';
+    // Contact button: shown on ads that have a seller phone, so buyers can reach them
+    const contactActionHtml = (isAd && sellerPhone)
+      ? `<button class="action-btn contact-btn" data-phone="${sellerPhone}" data-name="${(name || 'seller').replace(/"/g,'')}">💬 Contact</button>`
+      : '';
 
     const tUp = thumbsUp || 0;
     const tDown = thumbsDown || 0;
@@ -4215,6 +4222,7 @@
         <button class="action-btn thumbs-up-btn">👍 <span class="tup-count">${tUp}</span></button>
         <button class="action-btn thumbs-down-btn">👎 <span class="tdown-count">${tDown}</span></button>
         <button class="action-btn comment-toggle">💬 Comment · 0</button>
+        ${contactActionHtml}
         ${directionsActionHtml}
         ${boostActionHtml}
       </div>
@@ -4406,11 +4414,13 @@
       currentAuthToken = `phone_${currentUser.phone}_temp`;
     }
 
+    // Charge by the identifier that matches the token type
+    const isPhoneTokenBoost = currentAuthToken && currentAuthToken.startsWith('phone_');
     // ✅ SPEND CREDITS VIA EDGE FUNCTION (server-side verification)
     const spendResult = await supabaseClient.spendCredits({
       user_access_token: currentAuthToken,
-      target_email: currentUser.email,
-      target_phone: currentUser.phone,
+      target_email: isPhoneTokenBoost ? null : currentUser.email,
+      target_phone: isPhoneTokenBoost ? currentUser.phone : (currentUser.email ? null : currentUser.phone),
       amount: selectedBoostCost
     });
 
@@ -4440,6 +4450,16 @@
         openDirections({ lat, lng });
       } else {
         showToast('No location pinned for this ad');
+      }
+    }
+    // ===== CONTACT (WHATSAPP) BUTTON =====
+    if (e.target.classList.contains('contact-btn')) {
+      const phone = e.target.dataset.phone;
+      const sellerName = e.target.dataset.name || '';
+      if (phone) {
+        contactSeller({ seller_phone: phone, business_name: sellerName });
+      } else {
+        showToast('This seller has no contact number');
       }
     }
   });
